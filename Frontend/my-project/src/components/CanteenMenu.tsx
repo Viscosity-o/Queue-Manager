@@ -17,7 +17,6 @@ interface CartItem extends MenuItem {
 const CanteenMenu: React.FC = () => {
   const navigate = useNavigate();
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [showCart, setShowCart] = useState(false);
 
   const menuItems: MenuItem[] = [
     {
@@ -100,7 +99,6 @@ const CanteenMenu: React.FC = () => {
       }
       return [...prevCart, { ...item, quantity: 1 }];
     });
-    setShowCart(true);
   };
 
   const getTotalItems = () => {

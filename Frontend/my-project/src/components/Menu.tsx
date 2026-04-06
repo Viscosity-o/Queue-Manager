@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const Menu = () => {
     const [cartItems, setCartItems] = useState([
@@ -15,10 +15,6 @@ const Menu = () => {
             portion: 'Side portion'
         }
     ]);
-
-    const handleAddToCart = (item : any) => {
-        setCartItems([...cartItems, item]);
-    };
 
     const subtotal = cartItems.reduce((sum, item) => sum + item.price, 0);
     const service = subtotal * 0.05;
