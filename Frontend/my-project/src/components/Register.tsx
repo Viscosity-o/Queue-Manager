@@ -7,10 +7,17 @@ const Register: React.FC = () => {
     name: '',
     email: '',
     password: '',
-    confirm_password: ''
+    confirm_password: '',
+    phone: '',
+    collegeName: '',
+    canteenCode: '',
+    address: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -20,14 +27,60 @@ const Register: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+
     if (formData.password !== formData.confirm_password) {
-      alert('Passwords do not match!');
+      setError('Passwords do not match!');
       return;
     }
-    console.log('Form submitted:', { role: activeRole, ...formData });
-    alert(`Welcome ${formData.name}! Registration successful.`);
+
+    setLoading(true);
+
+    try {
+      const endpoint = activeRole === 'student' 
+        ? 'http://localhost:8080/auth/register/student'
+        : 'http://localhost:8080/auth/register/canteen';
+
+      const payload = activeRole === 'student'
+        ? {
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+            phone: formData.phone,
+            collegeName: formData.collegeName
+          }
+        : {
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+            canteenCode: formData.canteenCode,
+            address: formData.address,
+            phone: formData.phone
+          };
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Registration failed');
+      }
+
+      alert(`Welcome ${formData.name}! Registration successful.`);
+      navigate('/Sign');
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during registration');
+    } finally {
+      setLoading(false);
+    }
   };
   const goto = useNavigate();
 
@@ -105,6 +158,13 @@ const Register: React.FC = () => {
 
                 {/* Input Fields */}
                 <div className="space-y-5">
+                  {/* Error Message */}
+                  {error && (
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-2xl">
+                      <p className="text-red-600 text-sm font-medium">{error}</p>
+                    </div>
+                  )}
+
                   {/* Full Name */}
                   <div className="space-y-2">
                     <label htmlFor="name" className="text-on-surface font-label text-xs font-bold ml-1 uppercase tracking-wider opacity-70">
@@ -148,6 +208,122 @@ const Register: React.FC = () => {
                       />
                     </div>
                   </div>
+
+                  {/* Conditional Fields for Student */}
+                  {activeRole === 'student' && (
+                    <>
+                      <div className="space-y-2">
+                        <label htmlFor="phone" className="text-on-surface font-label text-xs font-bold ml-1 uppercase tracking-wider opacity-70">
+                          Phone Number
+                        </label>
+                        <div className="relative">
+                          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline/50 text-xl pointer-events-none">
+                            phone
+                          </span>
+                          <input
+                            type="tel"
+                            id="phone"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            placeholder="9999999999"
+                            required
+                            className="w-full pl-12 pr-4 py-3.5 bg-surface-container-low/50 border border-outline-variant/60 rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface placeholder:text-outline/40 outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="collegeName" className="text-on-surface font-label text-xs font-bold ml-1 uppercase tracking-wider opacity-70">
+                          College Name
+                        </label>
+                        <div className="relative">
+                          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline/50 text-xl pointer-events-none">
+                            school
+                          </span>
+                          <input
+                            type="text"
+                            id="collegeName"
+                            name="collegeName"
+                            value={formData.collegeName}
+                            onChange={handleInputChange}
+                            placeholder="ABC College"
+                            required
+                            className="w-full pl-12 pr-4 py-3.5 bg-surface-container-low/50 border border-outline-variant/60 rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface placeholder:text-outline/40 outline-none"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Conditional Fields for Staff */}
+                  {activeRole === 'staff' && (
+                    <>
+                      <div className="space-y-2">
+                        <label htmlFor="phone" className="text-on-surface font-label text-xs font-bold ml-1 uppercase tracking-wider opacity-70">
+                          Phone Number
+                        </label>
+                        <div className="relative">
+                          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline/50 text-xl pointer-events-none">
+                            phone
+                          </span>
+                          <input
+                            type="tel"
+                            id="phone"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            placeholder="9999999999"
+                            required
+                            className="w-full pl-12 pr-4 py-3.5 bg-surface-container-low/50 border border-outline-variant/60 rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface placeholder:text-outline/40 outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="canteenCode" className="text-on-surface font-label text-xs font-bold ml-1 uppercase tracking-wider opacity-70">
+                          Canteen Code
+                        </label>
+                        <div className="relative">
+                          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline/50 text-xl pointer-events-none">
+                            badge
+                          </span>
+                          <input
+                            type="text"
+                            id="canteenCode"
+                            name="canteenCode"
+                            value={formData.canteenCode}
+                            onChange={handleInputChange}
+                            placeholder="CANT001"
+                            required
+                            maxLength={10}
+                            className="w-full pl-12 pr-4 py-3.5 bg-surface-container-low/50 border border-outline-variant/60 rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface placeholder:text-outline/40 outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="address" className="text-on-surface font-label text-xs font-bold ml-1 uppercase tracking-wider opacity-70">
+                          Address
+                        </label>
+                        <div className="relative">
+                          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline/50 text-xl pointer-events-none">
+                            location_on
+                          </span>
+                          <input
+                            type="text"
+                            id="address"
+                            name="address"
+                            value={formData.address}
+                            onChange={handleInputChange}
+                            placeholder="123 Main Street"
+                            required
+                            className="w-full pl-12 pr-4 py-3.5 bg-surface-container-low/50 border border-outline-variant/60 rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface placeholder:text-outline/40 outline-none"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   {/* Password Row */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -219,12 +395,15 @@ const Register: React.FC = () => {
                 <div className="pt-4 space-y-6">
                   <button
                     type="submit"
-                    className="w-full py-4 bg-primary text-on-primary font-label text-sm font-bold uppercase tracking-[0.2em] rounded-2xl shadow-[0_12px_24px_-8px_rgba(23,54,40,0.4)] hover:shadow-[0_16px_32px_-8px_rgba(23,54,40,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2 group cursor-pointer"
+                    disabled={loading}
+                    className="w-full py-4 bg-primary text-on-primary font-label text-sm font-bold uppercase tracking-[0.2em] rounded-2xl shadow-[0_12px_24px_-8px_rgba(23,54,40,0.4)] hover:shadow-[0_16px_32px_-8px_rgba(23,54,40,0.5)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-300 flex items-center justify-center gap-2 group cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <span>Create Account</span>
-                    <span className="material-symbols-outlined text-lg transition-transform group-hover:translate-x-1">
-                      arrow_forward
-                    </span>
+                    <span>{loading ? 'Creating Account...' : 'Create Account'}</span>
+                    {!loading && (
+                      <span className="material-symbols-outlined text-lg transition-transform group-hover:translate-x-1">
+                        arrow_forward
+                      </span>
+                    )}
                   </button>
 
                   {/* Divider */}
@@ -242,7 +421,7 @@ const Register: React.FC = () => {
                     
 
                     <button
-  onClick={() => goto("/Sign")}
+  onClick={() => navigate("/Sign")}
   className="group inline-flex items-center gap-2 text-primary font-label text-sm font-bold transition-all hover:opacity-80 cursor-pointer"
 >
   <span>Sign In to your account</span>

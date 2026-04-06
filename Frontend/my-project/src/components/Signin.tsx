@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Signin: React.FC = () => {
@@ -7,6 +7,10 @@ const Signin: React.FC = () => {
     email: '',
     password: ''
   });
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<'student' | 'staff' | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -16,26 +20,61 @@ const Signin: React.FC = () => {
     }));
   };
 
-  // const handleLogin = (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   console.log('Login attempt:', { role: activeRole, ...formData });
-  //   if (activeRole === 'student') {
-  //     alert(`Welcome ${formData.email}! Student portal loading...`);
-  //   } else {
-  //     alert(`Welcome ${formData.email}! Staff portal loading...`);
-  //   }
-  // };
   const goto = useNavigate();
 
-   const handleLogin = (e: React.FormEvent) => {
-  e.preventDefault();
+  useEffect(() => {
+    if (authToken && userRole) {
+      if (userRole === 'student') {
+        goto('/StudDASH');
+      } else if (userRole === 'staff') {
+        goto('/StaffDash');
+      }
+    }
+  }, [authToken, userRole, goto]);
 
-  if (activeRole === "student") {
-    goto("/StudDASH");
-  } else {
-    goto("/StaffDash");
-  }
-};
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMessage('');
+
+    try {
+      const response = await fetch('http://localhost:8080/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        const errorText = data?.message || data?.error || 'Login failed. Please check your credentials.';
+        throw new Error(errorText);
+      }
+
+      const data = await response.json();
+      
+      // Backend returns "STUDENT" or "CANTEEN"
+      const normalizedRole = String(data.role || '').toLowerCase();
+      const mappedRole = normalizedRole === 'canteen' ? 'staff' : normalizedRole;
+      
+      if (mappedRole !== 'student' && mappedRole !== 'staff') {
+        throw new Error('Invalid role returned from server.');
+      }
+
+      setAuthToken(data.token);
+      setUserRole(mappedRole as 'student' | 'staff');
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('userRole', mappedRole);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
@@ -144,12 +183,23 @@ const Signin: React.FC = () => {
               />
             </div>
 
+            {errorMessage && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {errorMessage}
+              </div>
+            )}
+
             {/* Sign In Button */}
             <button
               type="submit"
-              className="w-full mt-6 py-3 px-4 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-bold rounded-lg shadow-lg hover:shadow-xl hover:from-emerald-700 hover:to-emerald-800 active:scale-95 transition-all duration-200"
+              disabled={loading}
+              className={`w-full mt-6 py-3 px-4 text-white font-bold rounded-lg shadow-lg transition-all duration-200 ${
+                loading
+                  ? 'bg-emerald-400 cursor-not-allowed shadow-none'
+                  : 'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:shadow-xl hover:from-emerald-700 hover:to-emerald-800 active:scale-95'
+              }`}
             >
-              Sign In
+              {loading ? 'Signing in...' : 'Sign In'}
             </button>
 
           </form>
