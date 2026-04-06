@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 const Menu = () => {
-    const [cartItems, setCartItems] = useState([
+    const [cartItems] = useState([
         {
             id: 1,
             name: 'Verdant Harvest Bowl',

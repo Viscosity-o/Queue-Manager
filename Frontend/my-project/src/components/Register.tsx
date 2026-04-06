@@ -82,7 +82,6 @@ const Register: React.FC = () => {
       setLoading(false);
     }
   };
-  const goto = useNavigate();
 
   return (
     <>
