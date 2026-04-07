@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_ENDPOINTS } from '../config/api';
 
 const Signin: React.FC = () => {
   const [activeRole, setActiveRole] = useState<'student' | 'staff'>('student');
@@ -38,7 +39,7 @@ const Signin: React.FC = () => {
     setErrorMessage('');
 
     try {
-      const response = await fetch('http://localhost:8080/auth/login', {
+      const response = await fetch(API_ENDPOINTS.LOGIN, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_ENDPOINTS } from '../config/api';
 
 const Register: React.FC = () => {
   const [activeRole, setActiveRole] = useState<'student' | 'staff'>('student');
@@ -40,8 +41,8 @@ const Register: React.FC = () => {
 
     try {
       const endpoint = activeRole === 'student' 
-        ? 'http://localhost:8080/auth/register/student'
-        : 'http://localhost:8080/auth/register/canteen';
+        ? API_ENDPOINTS.REGISTER_STUDENT
+        : API_ENDPOINTS.REGISTER_CANTEEN;
 
       const payload = activeRole === 'student'
         ? {

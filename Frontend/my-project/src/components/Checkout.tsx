@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { API_ENDPOINTS } from '../config/api';
 
 declare global {
   interface Window {
@@ -41,7 +42,7 @@ const Checkout: React.FC = () => {
     document.body.appendChild(script);
 
     // Fetch Razorpay key
-    fetch('http://localhost:8080/api/payment/key')
+    fetch(API_ENDPOINTS.PAYMENT_KEY)
       .then(res => res.json())
       .then(data => setRazorpayKeyId(data.keyId))
       .catch(err => console.error('Failed to fetch Razorpay key:', err));
@@ -71,7 +72,7 @@ const Checkout: React.FC = () => {
 
     try {
       // Create order on backend
-      const orderResponse = await fetch('http://localhost:8080/api/payment/create-order', {
+      const orderResponse = await fetch(API_ENDPOINTS.PAYMENT_CREATE_ORDER, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -107,7 +108,7 @@ const Checkout: React.FC = () => {
         handler: async function (response: any) {
           // Verify payment on backend
           try {
-            const verifyResponse = await fetch('http://localhost:8080/api/payment/verify', {
+            const verifyResponse = await fetch(API_ENDPOINTS.PAYMENT_VERIFY, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
