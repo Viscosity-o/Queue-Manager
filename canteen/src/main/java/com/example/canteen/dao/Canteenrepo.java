@@ -3,9 +3,11 @@ import com.example.canteen.entity.Canteen;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface Canteenrepo extends JpaRepository<Canteen, java.util.UUID> {
     Optional<Canteen> findByEmail(String email);
-
+    List<Canteen> findByCollegeCode(String collegeCode);
+    Optional<Canteen> findByCanteenCode(String canteenCode);
 }

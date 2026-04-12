@@ -1,7 +1,80 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_ENDPOINTS } from '../config/api';
+
+interface CanteenSearchResult {
+    canteenId: string;
+    name: string;
+    canteenCode: string;
+    collegeCode: string;
+    address: string;
+    phone: string;
+    isActive: boolean;
+}
 
 const StudDash = () => {
     const navigate = useNavigate();
+    const [searchCode, setSearchCode] = useState('');
+    const [searchResult, setSearchResult] = useState<CanteenSearchResult | null>(null);
+    const [searchError, setSearchError] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
+
+    const handleSearch = async () => {
+        if (!searchCode.trim()) {
+            setSearchError('Please enter a canteen code');
+            return;
+        }
+
+        setIsSearching(true);
+        setSearchError('');
+        setSearchResult(null);
+
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                setSearchError('Please login to search for canteens');
+                setIsSearching(false);
+                return;
+            }
+
+            const response = await fetch(
+                `${API_ENDPOINTS.STUDENT_SEARCH_CANTEEN}?canteenCode=${encodeURIComponent(searchCode)}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (response.status === 401) {
+                setSearchError('Session expired. Please login again.');
+                setIsSearching(false);
+                return;
+            }
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setSearchError(data.error || 'Canteen not found');
+                return;
+            }
+
+            setSearchResult(data);
+        } catch (error) {
+            console.error('Search error:', error);
+            setSearchError('Failed to search. Please try again.');
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            handleSearch();
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Global Styles */}
@@ -84,17 +157,69 @@ const StudDash = () => {
                     {/* Search Bar */}
                     <div className="relative max-w-2xl mx-auto">
                         <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-                            <span className="material-symbols-outlined text-gray-400 text-xl"></span>
+                            <span className="material-symbols-outlined text-gray-400 text-xl">search</span>
                         </div>
                         <input
                             type="text"
-                            placeholder="Search for canteens, cuisines, or specific dishes..."
+                            value={searchCode}
+                            onChange={(e) => setSearchCode(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            placeholder="Enter canteen code (e.g., CANT001)..."
                             className="w-full pl-14 pr-28 py-3.5 bg-white border border-gray-200 rounded-full text-gray-700 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-transparent shadow-sm"
                         />
-                        <button className="absolute right-2 top-2 bottom-2 bg-teal-900 text-white px-6 rounded-full font-semibold text-sm hover:bg-teal-950 transition">
-                            Search
+                        <button 
+                            onClick={handleSearch}
+                            disabled={isSearching}
+                            className="absolute right-2 top-2 bottom-2 bg-teal-900 text-white px-6 rounded-full font-semibold text-sm hover:bg-teal-950 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isSearching ? 'Searching...' : 'Search'}
                         </button>
                     </div>
+
+                    {/* Search Error Message */}
+                    {searchError && (
+                        <div className="max-w-2xl mx-auto mt-4 p-4 bg-red-50 border border-red-200 rounded-2xl">
+                            <p className="text-red-600 text-sm font-medium text-center">{searchError}</p>
+                        </div>
+                    )}
+
+                    {/* Search Result */}
+                    {searchResult && (
+                        <div className="max-w-2xl mx-auto mt-6 p-6 bg-white border border-teal-200 rounded-3xl shadow-lg">
+                            <div className="flex items-start justify-between mb-4">
+                                <div>
+                                    <h3 className="headline text-2xl font-bold text-gray-900 mb-2">
+                                        {searchResult.name}
+                                    </h3>
+                                    <div className="flex items-center gap-3 text-sm text-gray-600">
+                                        <span className="flex items-center gap-1">
+                                            <span className="material-symbols-outlined text-base">badge</span>
+                                            {searchResult.canteenCode}
+                                        </span>
+                                        {searchResult.address && (
+                                            <span className="flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-base">location_on</span>
+                                                {searchResult.address}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setSearchResult(null)}
+                                    className="text-gray-400 hover:text-gray-600 transition"
+                                >
+                                    <span className="material-symbols-outlined">close</span>
+                                </button>
+                            </div>
+                            <button
+                                onClick={() => navigate('/canteen-menu', { state: { canteenId: searchResult.canteenId, canteenName: searchResult.name } })}
+                                className="w-full py-3 bg-teal-900 text-white rounded-full font-semibold text-sm hover:bg-teal-950 transition flex items-center justify-center gap-2"
+                            >
+                                View Menu
+                                <span className="material-symbols-outlined text-base">arrow_forward</span>
+                            </button>
+                        </div>
+                    )}
                 </section>
 
                 {/* Explore Cuisines Section */}

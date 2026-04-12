@@ -14,9 +14,16 @@ export const API_ENDPOINTS = {
   
   // Student endpoints
   STUDENT_INFO: `${API_BASE_URL}/Student/info`,
+  STUDENT_CANTEENS: `${API_BASE_URL}/Student/canteens`,
+  STUDENT_SEARCH_CANTEEN: `${API_BASE_URL}/Student/canteen/search`,
   
   // Canteen endpoints
   CANTEEN_INFO: `${API_BASE_URL}/Canteen/info`,
+  
+  // Staff Dashboard endpoints
+  STAFF_DASHBOARD_STATS: `${API_BASE_URL}/staff/dashboard/stats`,
+  STAFF_INVENTORY: `${API_BASE_URL}/staff/inventory`,
+  STAFF_MENU: `${API_BASE_URL}/staff/menu`,
 };
 
 export default API_BASE_URL;

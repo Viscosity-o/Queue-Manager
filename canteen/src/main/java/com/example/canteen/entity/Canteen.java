@@ -29,6 +29,9 @@ public class Canteen {
     @Column(name = "canteen_code", nullable = false, unique = true, length = 10)
     private String canteenCode;
 
+    @Column(name = "college_code")
+    private String collegeCode;
+
     private String address;
 
     private String phone;

@@ -11,6 +11,7 @@ const Register: React.FC = () => {
     confirm_password: '',
     phone: '',
     collegeName: '',
+    collegeCode: '',
     canteenCode: '',
     address: ''
   });
@@ -50,13 +51,15 @@ const Register: React.FC = () => {
             email: formData.email,
             password: formData.password,
             phone: formData.phone,
-            collegeName: formData.collegeName
+            collegeName: formData.collegeName,
+            collegeCode: formData.collegeCode
           }
         : {
             name: formData.name,
             email: formData.email,
             password: formData.password,
             canteenCode: formData.canteenCode,
+            collegeCode: formData.collegeCode,
             address: formData.address,
             phone: formData.phone
           };
@@ -253,6 +256,28 @@ const Register: React.FC = () => {
                           />
                         </div>
                       </div>
+
+                      <div className="space-y-2">
+                        <label htmlFor="collegeCode" className="text-on-surface font-label text-xs font-bold ml-1 uppercase tracking-wider opacity-70">
+                          College Code
+                        </label>
+                        <div className="relative">
+                          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline/50 text-xl pointer-events-none">
+                            badge
+                          </span>
+                          <input
+                            type="text"
+                            id="collegeCode"
+                            name="collegeCode"
+                            value={formData.collegeCode}
+                            onChange={handleInputChange}
+                            placeholder="CLG001"
+                            required
+                            maxLength={10}
+                            className="w-full pl-12 pr-4 py-3.5 bg-surface-container-low/50 border border-outline-variant/60 rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface placeholder:text-outline/40 outline-none"
+                          />
+                        </div>
+                      </div>
                     </>
                   )}
 
@@ -281,12 +306,34 @@ const Register: React.FC = () => {
                       </div>
 
                       <div className="space-y-2">
+                        <label htmlFor="collegeCode" className="text-on-surface font-label text-xs font-bold ml-1 uppercase tracking-wider opacity-70">
+                          College Code
+                        </label>
+                        <div className="relative">
+                          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline/50 text-xl pointer-events-none">
+                            badge
+                          </span>
+                          <input
+                            type="text"
+                            id="collegeCode"
+                            name="collegeCode"
+                            value={formData.collegeCode}
+                            onChange={handleInputChange}
+                            placeholder="CLG001"
+                            required
+                            maxLength={10}
+                            className="w-full pl-12 pr-4 py-3.5 bg-surface-container-low/50 border border-outline-variant/60 rounded-2xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-on-surface placeholder:text-outline/40 outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
                         <label htmlFor="canteenCode" className="text-on-surface font-label text-xs font-bold ml-1 uppercase tracking-wider opacity-70">
                           Canteen Code
                         </label>
                         <div className="relative">
                           <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline/50 text-xl pointer-events-none">
-                            badge
+                            restaurant
                           </span>
                           <input
                             type="text"

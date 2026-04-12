@@ -9,4 +9,5 @@ public class RegisterStudentRequest {
     private String password;
     private String phone;
     private String collegeName;
+    private String collegeCode;
 }

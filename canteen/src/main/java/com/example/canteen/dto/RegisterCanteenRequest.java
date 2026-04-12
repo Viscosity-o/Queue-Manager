@@ -8,6 +8,7 @@ public class RegisterCanteenRequest {
     private String email;
     private String password;
     private String canteenCode;
+    private String collegeCode;
     private String address;
     private String phone;
 }

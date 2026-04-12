@@ -36,6 +36,8 @@ public class studentable {
     @Column(name = "college_name")
     private String collegeName;
 
+    @Column(name = "college_code")
+    private String collegeCode;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

@@ -7,6 +7,8 @@ import StaffDash from "./components/StaffDash";
 import Menu from "./components/Menu";
 import CanteenMenu from "./components/CanteenMenu";
 import Checkout from "./components/Checkout";
+import InventoryTracking from "./components/InventoryTracking";
+import KPIDashboard from "./components/KPIDashboard";
 
 function App(){
   return(
@@ -22,6 +24,8 @@ function App(){
     <Route path="menu" element={<Menu/>}/>
     <Route path="canteen-menu" element={<CanteenMenu/>}/>
     <Route path="checkout" element={<Checkout/>}/>
+    <Route path="inventory" element={<InventoryTracking/>}/>
+    <Route path="kpi-dashboard" element={<KPIDashboard/>}/>
     </Routes>
     </BrowserRouter>
     </>
