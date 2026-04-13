@@ -1,9 +1,12 @@
 package com.example.canteen.Controllers;
 
 import com.example.canteen.dao.Canteenrepo;
+import com.example.canteen.dao.MenuItemRepository;
 import com.example.canteen.dao.Studentrepo;
 import com.example.canteen.dto.CanteenResponse;
+import com.example.canteen.dto.MenuItemResponse;
 import com.example.canteen.entity.Canteen;
+import com.example.canteen.entity.MenuItem;
 import com.example.canteen.entity.studentable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -11,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "https://main.d2p2ult8kyt0kl.amplifyapp.com"})
@@ -20,10 +24,12 @@ public class StudentController {
     
     private final Studentrepo studentRepo;
     private final Canteenrepo canteenRepo;
+    private final MenuItemRepository menuItemRepo;
     
-    public StudentController(Studentrepo studentRepo, Canteenrepo canteenRepo) {
+    public StudentController(Studentrepo studentRepo, Canteenrepo canteenRepo, MenuItemRepository menuItemRepo) {
         this.studentRepo = studentRepo;
         this.canteenRepo = canteenRepo;
+        this.menuItemRepo = menuItemRepo;
     }
     
     @GetMapping("/dash")
@@ -87,6 +93,36 @@ public class StudentController {
         return ResponseEntity.ok(response);
     }
     
+    @GetMapping("/canteen/{canteenId}/menu")
+    public ResponseEntity<?> getCanteenMenu(
+            @PathVariable UUID canteenId,
+            Authentication authentication) {
+        // Find canteen by ID
+        Canteen canteen = canteenRepo.findById(canteenId)
+                .orElse(null);
+        
+        if (canteen == null) {
+            return ResponseEntity.status(404)
+                    .body(Map.of("error", "Canteen not found"));
+        }
+        
+        // Check if canteen is active
+        if (!canteen.getIsActive()) {
+            return ResponseEntity.status(404)
+                    .body(Map.of("error", "Canteen is not currently active"));
+        }
+        
+        // Get all menu items for this canteen
+        List<MenuItem> menuItems = menuItemRepo.findByCanteen(canteen);
+        
+        // Map to response DTOs
+        List<MenuItemResponse> menuResponses = menuItems.stream()
+                .map(this::mapToMenuItemResponse)
+                .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(menuResponses);
+    }
+    
     private CanteenResponse mapToCanteenResponse(Canteen canteen) {
         return CanteenResponse.builder()
                 .canteenId(canteen.getCanteenId())
@@ -96,6 +132,19 @@ public class StudentController {
                 .address(canteen.getAddress())
                 .phone(canteen.getPhone())
                 .isActive(canteen.getIsActive())
+                .build();
+    }
+    
+    private MenuItemResponse mapToMenuItemResponse(MenuItem menuItem) {
+        return MenuItemResponse.builder()
+                .menuItemId(menuItem.getMenuItemId())
+                .name(menuItem.getName())
+                .category(menuItem.getCategory())
+                .price(menuItem.getPrice())
+                .description(menuItem.getDescription())
+                .isAvailable(menuItem.getIsAvailable())
+                .stockStatus(menuItem.getStockStatus())
+                .image(menuItem.getImage())
                 .build();
     }
 }

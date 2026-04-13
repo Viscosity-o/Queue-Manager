@@ -1,98 +1,87 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { API_ENDPOINTS } from '../config/api';
 
 interface MenuItem {
-  id: number;
+  menuItemId: string;
   name: string;
   description: string;
   price: number;
   image: string;
   category: string;
+  isAvailable: boolean;
+  stockStatus: string;
 }
 
 interface CartItem extends MenuItem {
   quantity: number;
 }
 
+interface LocationState {
+  canteenId: string;
+  canteenName: string;
+}
+
 const CanteenMenu: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as LocationState;
+  
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [canteenName, setCanteenName] = useState(state?.canteenName || 'Canteen');
 
-  const menuItems: MenuItem[] = [
-    {
-      id: 1,
-      name: 'Harvest Radish 3-Salad Bowl',
-      description: 'Fresh greens with radish, cucumber, and house vinaigrette',
-      price: 18.40,
-      image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop',
-      category: 'Mains'
-    },
-    {
-      id: 2,
-      name: 'Wild Caught Atlantic Salmon',
-      description: 'Pan-seared salmon with seasonal vegetables',
-      price: 32.00,
-      image: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=300&fit=crop',
-      category: 'Mains'
-    },
-    {
-      id: 3,
-      name: 'Chamomile Oasis Matcha',
-      description: 'Premium matcha with chamomile infusion',
-      price: 14.00,
-      image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=300&fit=crop',
-      category: 'Beverages'
-    },
-    {
-      id: 4,
-      name: 'Iced Cappuccino',
-      description: 'Double shot espresso over ice with cold foam',
-      price: 8.50,
-      image: 'https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?w=400&h=300&fit=crop',
-      category: 'Beverages'
-    },
-    {
-      id: 5,
-      name: 'Strawberry Smoothie',
-      description: 'Fresh strawberries blended with yogurt',
-      price: 9.00,
-      image: 'https://images.unsplash.com/photo-1505252585461-04db1eb84625?w=400&h=300&fit=crop',
-      category: 'Beverages'
-    },
-    {
-      id: 6,
-      name: 'Grilled Chicken Sandwich',
-      description: 'Herb-marinated chicken with fresh vegetables',
-      price: 15.50,
-      image: 'https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=400&h=300&fit=crop',
-      category: 'Combos & Meals'
-    },
-    {
-      id: 7,
-      name: 'Veggie Burger Combo',
-      description: 'Plant-based patty with fries and drink',
-      price: 18.00,
-      image: 'https://images.unsplash.com/photo-1520072959219-c595dc870360?w=400&h=300&fit=crop',
-      category: 'Combos & Meals'
-    },
-    {
-      id: 8,
-      name: 'Sweet Potato Fries',
-      description: 'Crispy sweet potato fries with aioli',
-      price: 6.50,
-      image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400&h=300&fit=crop',
-      category: 'Snacks & Sides'
+  useEffect(() => {
+    if (!state?.canteenId) {
+      setError('No canteen selected');
+      setLoading(false);
+      return;
     }
-  ];
 
-  const categories = ['Beverages', 'Mains', 'Combos & Meals', 'Snacks & Sides'];
+    fetchMenuItems();
+  }, [state?.canteenId]);
+
+  const fetchMenuItems = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setError('Please login to view menu');
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(API_ENDPOINTS.STUDENT_CANTEEN_MENU(state.canteenId), {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch menu items');
+      }
+
+      const data = await response.json();
+      setMenuItems(data);
+    } catch (err) {
+      console.error('Error fetching menu:', err);
+      setError('Failed to load menu items');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const categories = [...new Set(menuItems.map(item => item.category))];
+  const featuredItem = menuItems.find(item => item.isAvailable) || menuItems[0];
 
   const addToCart = (item: MenuItem) => {
     setCart(prevCart => {
-      const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
+      const existingItem = prevCart.find(cartItem => cartItem.menuItemId === item.menuItemId);
       if (existingItem) {
         return prevCart.map(cartItem =>
-          cartItem.id === item.id
+          cartItem.menuItemId === item.menuItemId
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
@@ -108,6 +97,49 @@ const CanteenMenu: React.FC = () => {
   const getTotalPrice = () => {
     return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-900 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading menu...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={() => navigate('/student-dashboard')}
+            className="bg-teal-900 text-white px-6 py-2 rounded-full hover:bg-teal-800 transition"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (menuItems.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 mb-4">No menu items available for this canteen</p>
+          <button
+            onClick={() => navigate('/student-dashboard')}
+            className="bg-teal-900 text-white px-6 py-2 rounded-full hover:bg-teal-800 transition"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -145,53 +177,51 @@ const CanteenMenu: React.FC = () => {
             </div>
 
             <div>
-              <h2 className="text-4xl font-bold mb-2">The Garden Canteen</h2>
+              <h2 className="text-4xl font-bold mb-2">{canteenName}</h2>
               <p className="text-white/80 text-sm mb-4">
                 Fresh, organic ingredients prepared daily with care
               </p>
               <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-yellow-400" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                  <span className="font-semibold">4.8</span>
-                  <span className="text-white/60">(2,410 reviews)</span>
-                </div>
-                <span className="text-white/40">•</span>
-                <span className="text-white/80">Open until 8:00 PM</span>
+                <span className="text-white/80">{menuItems.length} items available</span>
               </div>
             </div>
           </div>
         </header>
 
         {/* Featured Item Banner */}
-        <div className="bg-gradient-to-r from-teal-800 to-teal-900 text-white">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-            <div className="flex items-center gap-8">
-              <div className="flex-1">
-                <span className="inline-block bg-yellow-400 text-teal-900 text-xs font-bold px-3 py-1 rounded-full mb-3">
-                  SPECIAL AVAILABLE NOW
-                </span>
-                <h3 className="text-3xl font-bold mb-2">Harvest Radish 3-Salad Bowl</h3>
-                <p className="text-white/80 mb-4">
-                  A vibrant mix of fresh greens, crisp radishes, and seasonal vegetables
-                </p>
-                <button
-                  onClick={() => addToCart(menuItems[0])}
-                  className="bg-white text-teal-900 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition flex items-center gap-2"
-                >
-                  <span>Add to Cart</span>
-                  <span className="material-symbols-outlined">arrow_forward</span>
-                </button>
-              </div>
-              <div className="w-80 h-64 rounded-2xl overflow-hidden shadow-2xl">
-                <img
-                  src={menuItems[0].image}
-                  alt="Featured Item"
-                  className="w-full h-full object-cover"
-                />
+        {featuredItem && (
+          <div className="bg-gradient-to-r from-teal-800 to-teal-900 text-white">
+            <div className="max-w-7xl mx-auto px-6 py-8">
+              <div className="flex items-center gap-8">
+                <div className="flex-1">
+                  <span className="inline-block bg-yellow-400 text-teal-900 text-xs font-bold px-3 py-1 rounded-full mb-3">
+                    FEATURED ITEM
+                  </span>
+                  <h3 className="text-3xl font-bold mb-2">{featuredItem.name}</h3>
+                  <p className="text-white/80 mb-4">
+                    {featuredItem.description || 'Delicious and freshly prepared'}
+                  </p>
+                  <button
+                    onClick={() => addToCart(featuredItem)}
+                    className="bg-white text-teal-900 px-6 py-3 rounded-full font-semibold hover:bg-gray-100 transition flex items-center gap-2"
+                  >
+                    <span>Add to Cart</span>
+                    <span className="material-symbols-outlined">arrow_forward</span>
+                  </button>
+                </div>
+                {featuredItem.image && (
+                  <div className="w-80 h-64 rounded-2xl overflow-hidden shadow-2xl">
+                    <img
+                      src={featuredItem.image}
+                      alt="Featured Item"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Menu Content */}
         <main className="max-w-7xl mx-auto px-6 py-12">
@@ -203,26 +233,36 @@ const CanteenMenu: React.FC = () => {
                   .filter(item => item.category === category)
                   .map(item => (
                     <div
-                      key={item.id}
+                      key={item.menuItemId}
                       className="bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-lg transition group"
                     >
-                      <div className="h-48 overflow-hidden">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                        />
-                      </div>
+                      {item.image && (
+                        <div className="h-48 overflow-hidden">
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                          />
+                        </div>
+                      )}
                       <div className="p-5">
-                        <h4 className="font-bold text-gray-900 mb-2">{item.name}</h4>
-                        <p className="text-gray-600 text-sm mb-4">{item.description}</p>
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-bold text-gray-900">{item.name}</h4>
+                          {!item.isAvailable && (
+                            <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">
+                              Unavailable
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-gray-600 text-sm mb-4">{item.description || 'Delicious item'}</p>
                         <div className="flex items-center justify-between">
                           <span className="text-2xl font-bold text-teal-900">
-                            ${item.price.toFixed(2)}
+                            ₹{item.price.toFixed(2)}
                           </span>
                           <button
                             onClick={() => addToCart(item)}
-                            className="bg-teal-900 text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-teal-800 transition flex items-center gap-2"
+                            disabled={!item.isAvailable}
+                            className="bg-teal-900 text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-teal-800 transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <span>Add</span>
                             <span className="material-symbols-outlined text-lg">add_shopping_cart</span>

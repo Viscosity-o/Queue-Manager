@@ -16,9 +16,12 @@ export const API_ENDPOINTS = {
   STUDENT_INFO: `${API_BASE_URL}/Student/info`,
   STUDENT_CANTEENS: `${API_BASE_URL}/Student/canteens`,
   STUDENT_SEARCH_CANTEEN: `${API_BASE_URL}/Student/canteen/search`,
+  STUDENT_CANTEEN_MENU: (canteenId: string) => `${API_BASE_URL}/Student/canteen/${canteenId}/menu`,
   
   // Canteen endpoints
   CANTEEN_INFO: `${API_BASE_URL}/Canteen/info`,
+  CANTEEN_MENU: `${API_BASE_URL}/Canteen/menu`,
+  CANTEEN_ADD_MENU_ITEM: `${API_BASE_URL}/Canteen/menu`,
   
   // Staff Dashboard endpoints
   STAFF_DASHBOARD_STATS: `${API_BASE_URL}/staff/dashboard/stats`,

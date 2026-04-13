@@ -30,22 +30,27 @@ const StudDash = () => {
         setSearchResult(null);
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('authToken'); // Changed from 'token' to 'authToken'
+            console.log('Token exists:', !!token);
+            
             if (!token) {
                 setSearchError('Please login to search for canteens');
                 setIsSearching(false);
                 return;
             }
 
-            const response = await fetch(
-                `${API_ENDPOINTS.STUDENT_SEARCH_CANTEEN}?canteenCode=${encodeURIComponent(searchCode)}`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
+            console.log('Searching for canteen code:', searchCode);
+            const url = `${API_ENDPOINTS.STUDENT_SEARCH_CANTEEN}?canteenCode=${encodeURIComponent(searchCode)}`;
+            console.log('Request URL:', url);
+
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 }
-            );
+            });
+
+            console.log('Response status:', response.status);
 
             if (response.status === 401) {
                 setSearchError('Session expired. Please login again.');
@@ -54,6 +59,7 @@ const StudDash = () => {
             }
 
             const data = await response.json();
+            console.log('Response data:', data);
 
             if (!response.ok) {
                 setSearchError(data.error || 'Canteen not found');

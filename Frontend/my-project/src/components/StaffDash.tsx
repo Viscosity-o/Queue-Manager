@@ -11,18 +11,42 @@ interface DashboardStats {
     ordersGrowth: number;
 }
 
+interface MenuItem {
+    menuItemId: string;
+    name: string;
+    category: string;
+    price: number;
+    description: string;
+    isAvailable: boolean;
+    stockStatus: string;
+    image: string;
+}
+
 const StaffDash = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('overview');
     const [stats, setStats] = useState<DashboardStats | null>(null);
+    const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [newItem, setNewItem] = useState({
+        name: '',
+        category: '',
+        price: '',
+        description: '',
+        image: ''
+    });
 
     useEffect(() => {
         fetchDashboardStats();
-    }, []);
+        if (activeTab === 'menu') {
+            fetchMenuItems();
+        }
+    }, [activeTab]);
 
     const fetchDashboardStats = async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('authToken');
             const response = await fetch(API_ENDPOINTS.STAFF_DASHBOARD_STATS, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -36,6 +60,63 @@ const StaffDash = () => {
             }
         } catch (error) {
             console.error('Failed to fetch dashboard stats:', error);
+        }
+    };
+
+    const fetchMenuItems = async () => {
+        try {
+            const token = localStorage.getItem('authToken');
+            const response = await fetch(API_ENDPOINTS.CANTEEN_MENU, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setMenuItems(data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch menu items:', error);
+        }
+    };
+
+    const handleAddMenuItem = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            const token = localStorage.getItem('authToken');
+            const response = await fetch(API_ENDPOINTS.CANTEEN_ADD_MENU_ITEM, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: newItem.name,
+                    category: newItem.category,
+                    price: parseFloat(newItem.price),
+                    description: newItem.description,
+                    image: newItem.image || null
+                })
+            });
+
+            if (response.ok) {
+                // Reset form and close modal
+                setNewItem({ name: '', category: '', price: '', description: '', image: '' });
+                setShowAddModal(false);
+                // Refresh menu items
+                fetchMenuItems();
+            } else {
+                alert('Failed to add menu item');
+            }
+        } catch (error) {
+            console.error('Error adding menu item:', error);
+            alert('Error adding menu item');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -338,44 +419,54 @@ const StaffDash = () => {
                                             </h3>
                                             <p className="text-[#173628]/40 text-sm font-light mt-1">Manage your culinary offerings</p>
                                         </div>
-                                        <button className="px-5 py-2.5 bg-[#173628] text-white rounded-full font-bold text-[11px] tracking-[0.15em] uppercase hover:bg-[#173628]/90 transition-all flex items-center gap-2 shadow-lg shadow-[#173628]/20">
+                                        <button 
+                                            onClick={() => setShowAddModal(true)}
+                                            className="px-5 py-2.5 bg-[#173628] text-white rounded-full font-bold text-[11px] tracking-[0.15em] uppercase hover:bg-[#173628]/90 transition-all flex items-center gap-2 shadow-lg shadow-[#173628]/20"
+                                        >
                                             <span className="material-symbols-outlined text-sm">add</span>
                                             Add New Item
                                         </button>
                                     </div>
-                                    <div className="space-y-2">
-                                        {[
-                                            { name: 'Masala Dosa', category: 'South Indian', price: '₹150', stock: 'Available', image: '🥞' },
-                                            { name: 'Paneer Butter Masala', category: 'North Indian', price: '₹190', stock: 'Available', image: '🍛' },
-                                            { name: 'Veg Biryani', category: 'Rice', price: '₹150', stock: 'Low Stock', image: '🍚' },
-                                            { name: 'Samosa', category: 'Snacks', price: '₹30', stock: 'Available', image: '🥟' },
-                                        ].map((item, idx) => (
-                                            <div key={idx} className="order-row flex items-center justify-between p-4 rounded-xl cursor-pointer border border-transparent hover:border-[#173628]/[0.06]">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 bg-[#173628]/[0.03] rounded-xl flex items-center justify-center text-2xl">
-                                                        {item.image}
+                                    
+                                    {menuItems.length === 0 ? (
+                                        <div className="text-center py-12">
+                                            <span className="material-symbols-outlined text-6xl text-[#173628]/20 mb-4">restaurant_menu</span>
+                                            <p className="text-[#173628]/40 text-sm">No menu items yet. Add your first item!</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {menuItems.map((item) => (
+                                                <div key={item.menuItemId} className="order-row flex items-center justify-between p-4 rounded-xl cursor-pointer border border-transparent hover:border-[#173628]/[0.06]">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 bg-[#173628]/[0.03] rounded-xl flex items-center justify-center text-2xl overflow-hidden">
+                                                            {item.image ? (
+                                                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                <span className="material-symbols-outlined text-[#173628]/40">restaurant</span>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-semibold text-[#173628] text-sm">{item.name}</p>
+                                                            <p className="text-xs text-[#173628]/40 font-light">{item.category}</p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="font-semibold text-[#173628] text-sm">{item.name}</p>
-                                                        <p className="text-xs text-[#173628]/40 font-light">{item.category}</p>
+                                                    <div className="flex items-center gap-5">
+                                                        <span className="font-bold text-[#173628] text-sm">₹{item.price.toFixed(2)}</span>
+                                                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${
+                                                            item.isAvailable 
+                                                                ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' 
+                                                                : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
+                                                        }`}>
+                                                            {item.stockStatus}
+                                                        </span>
+                                                        <button className="p-2 hover:bg-[#173628]/[0.04] rounded-lg transition">
+                                                            <span className="material-symbols-outlined text-[#173628]/40 text-lg">edit</span>
+                                                        </button>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-5">
-                                                    <span className="font-bold text-[#173628] text-sm">{item.price}</span>
-                                                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${
-                                                        item.stock === 'Available' 
-                                                            ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' 
-                                                            : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
-                                                    }`}>
-                                                        {item.stock}
-                                                    </span>
-                                                    <button className="p-2 hover:bg-[#173628]/[0.04] rounded-lg transition">
-                                                        <span className="material-symbols-outlined text-[#173628]/40 text-lg">edit</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
@@ -475,6 +566,101 @@ const StaffDash = () => {
                     </div>
                 </div>
             </main>
+
+            {/* Add Menu Item Modal */}
+            {showAddModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="headline text-xl font-bold text-[#173628]">Add New Menu Item</h3>
+                            <button 
+                                onClick={() => setShowAddModal(false)}
+                                className="p-2 hover:bg-[#173628]/5 rounded-lg transition"
+                            >
+                                <span className="material-symbols-outlined text-[#173628]/60">close</span>
+                            </button>
+                        </div>
+                        
+                        <form onSubmit={handleAddMenuItem} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-[#173628]/70 mb-2">Item Name</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={newItem.name}
+                                    onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                                    className="w-full px-4 py-2.5 border border-[#173628]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173628]/20 focus:border-[#173628]/30"
+                                    placeholder="e.g., Masala Dosa"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-[#173628]/70 mb-2">Category</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={newItem.category}
+                                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                                    className="w-full px-4 py-2.5 border border-[#173628]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173628]/20 focus:border-[#173628]/30"
+                                    placeholder="e.g., South Indian"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-[#173628]/70 mb-2">Price (₹)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    required
+                                    value={newItem.price}
+                                    onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
+                                    className="w-full px-4 py-2.5 border border-[#173628]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173628]/20 focus:border-[#173628]/30"
+                                    placeholder="e.g., 150"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-[#173628]/70 mb-2">Description</label>
+                                <textarea
+                                    value={newItem.description}
+                                    onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                                    className="w-full px-4 py-2.5 border border-[#173628]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173628]/20 focus:border-[#173628]/30 resize-none"
+                                    rows={3}
+                                    placeholder="Brief description of the item"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-[#173628]/70 mb-2">Image URL (optional)</label>
+                                <input
+                                    type="url"
+                                    value={newItem.image}
+                                    onChange={(e) => setNewItem({ ...newItem, image: e.target.value })}
+                                    className="w-full px-4 py-2.5 border border-[#173628]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173628]/20 focus:border-[#173628]/30"
+                                    placeholder="https://example.com/image.jpg"
+                                />
+                            </div>
+                            
+                            <div className="flex gap-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAddModal(false)}
+                                    className="flex-1 px-4 py-2.5 border border-[#173628]/20 text-[#173628]/70 rounded-xl font-medium hover:bg-[#173628]/5 transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="flex-1 px-4 py-2.5 bg-[#173628] text-white rounded-xl font-medium hover:bg-[#173628]/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? 'Adding...' : 'Add Item'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
