@@ -31,7 +31,7 @@ const CanteenMenu: React.FC = () => {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [canteenName, setCanteenName] = useState(state?.canteenName || 'Canteen');
+  const [canteenName] = useState(state?.canteenName || 'Canteen');
 
   useEffect(() => {
     if (!state?.canteenId) {
