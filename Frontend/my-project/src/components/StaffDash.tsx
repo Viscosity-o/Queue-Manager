@@ -39,25 +39,16 @@ const StaffDash = () => {
 
     useEffect(() => {
         fetchDashboardStats();
-        if (activeTab === 'menu') {
-            fetchMenuItems();
-        }
+        if (activeTab === 'menu') fetchMenuItems();
     }, [activeTab]);
 
     const fetchDashboardStats = async () => {
         try {
             const token = localStorage.getItem('authToken');
             const response = await fetch(API_ENDPOINTS.STAFF_DASHBOARD_STATS, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
             });
-
-            if (response.ok) {
-                const data = await response.json();
-                setStats(data);
-            }
+            if (response.ok) setStats(await response.json());
         } catch (error) {
             console.error('Failed to fetch dashboard stats:', error);
         }
@@ -67,16 +58,9 @@ const StaffDash = () => {
         try {
             const token = localStorage.getItem('authToken');
             const response = await fetch(API_ENDPOINTS.CANTEEN_MENU, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
             });
-
-            if (response.ok) {
-                const data = await response.json();
-                setMenuItems(data);
-            }
+            if (response.ok) setMenuItems(await response.json());
         } catch (error) {
             console.error('Failed to fetch menu items:', error);
         }
@@ -85,15 +69,11 @@ const StaffDash = () => {
     const handleAddMenuItem = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-
         try {
             const token = localStorage.getItem('authToken');
             const response = await fetch(API_ENDPOINTS.CANTEEN_ADD_MENU_ITEM, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: newItem.name,
                     category: newItem.category,
@@ -102,12 +82,9 @@ const StaffDash = () => {
                     image: newItem.image || null
                 })
             });
-
             if (response.ok) {
-                // Reset form and close modal
                 setNewItem({ name: '', category: '', price: '', description: '', image: '' });
                 setShowAddModal(false);
-                // Refresh menu items
                 fetchMenuItems();
             } else {
                 alert('Failed to add menu item');
@@ -120,288 +97,665 @@ const StaffDash = () => {
         }
     };
 
+    const tabs = [
+        { key: 'overview', label: 'Overview', icon: '⊞' },
+        { key: 'inventory', label: 'Inventory', icon: '⬡', route: '/inventory' },
+        { key: 'kpi', label: 'KPI', icon: '◈', route: '/kpi-dashboard' },
+        { key: 'menu', label: 'Menu', icon: '≡' },
+        { key: 'orders', label: 'Orders', icon: '⊟' },
+    ];
+
+    const navItems = [
+        { icon: 'dashboard', route: '/', label: 'Home' },
+        { icon: 'inventory_2', route: '/inventory', label: 'Inventory' },
+        { icon: 'analytics', route: '/kpi-dashboard', label: 'KPI' },
+        { icon: 'restaurant_menu', route: '#', label: 'Menu' },
+        { icon: 'receipt_long', route: '#', label: 'Orders' },
+    ];
+
     return (
-        <div className="min-h-screen bg-[#FAF9F7]">
-            {/* Premium Styles */}
+        <div style={{ display: 'flex', minHeight: '100vh', background: '#F5F4F0', fontFamily: "'DM Sans', sans-serif" }}>
+
+            {/* ── Google Fonts ── */}
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
+
+                * { box-sizing: border-box; margin: 0; padding: 0; }
+
                 .material-symbols-outlined {
+                    font-family: 'Material Symbols Outlined';
+                    font-weight: normal;
+                    font-style: normal;
+                    font-size: 20px;
+                    line-height: 1;
+                    letter-spacing: normal;
+                    text-transform: none;
+                    display: inline-block;
+                    white-space: nowrap;
+                    word-wrap: normal;
+                    direction: ltr;
+                    -webkit-font-smoothing: antialiased;
                     font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
                 }
-                body { font-family: 'Inter', sans-serif; }
-                .headline { font-family: 'Manrope', sans-serif; }
+
+                /* ── Sidebar ── */
+                .sidebar-nav-btn {
+                    width: 40px; height: 40px;
+                    border-radius: 10px;
+                    border: none;
+                    background: transparent;
+                    display: flex; align-items: center; justify-content: center;
+                    cursor: pointer;
+                    color: #888;
+                    transition: background 0.15s, color 0.15s;
+                }
+                .sidebar-nav-btn:hover { background: #f0f3f1; color: #0F2318; }
+                .sidebar-nav-btn.active { background: #f0f3f1; color: #0F2318; }
+
+                /* ── Top bar ── */
+                .topbar-search {
+                    background: #f8f7f4;
+                    border: 1px solid rgba(0,0,0,0.08);
+                    border-radius: 10px;
+                    padding: 0 14px;
+                    height: 36px;
+                    font-family: 'DM Sans', sans-serif;
+                    font-size: 13px;
+                    color: #0F2318;
+                    width: 220px;
+                    outline: none;
+                    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+                }
+                .topbar-search::placeholder { color: #c0bfb0; }
+                .topbar-search:focus {
+                    background: #fff;
+                    border-color: rgba(15,35,24,0.30);
+                    box-shadow: 0 0 0 3px rgba(15,35,24,0.06);
+                }
+
+                /* ── Stat cards ── */
                 .stat-card {
-                    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+                    background: #fff;
+                    border: 1px solid rgba(0,0,0,0.07);
+                    border-radius: 12px;
+                    padding: 20px;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
                 }
                 .stat-card:hover {
-                    transform: translateY(-4px);
-                    box-shadow: 0 20px 40px -12px rgba(17, 54, 40, 0.12);
+                    transform: translateY(-2px);
+                    box-shadow: 0 12px 32px rgba(0,0,0,0.09);
                 }
-                .nav-item {
-                    position: relative;
-                    transition: all 0.3s ease;
+                .stat-card.featured {
+                    background: #0F2318;
+                    color: #fff;
                 }
-                .nav-item::after {
-                    content: '';
-                    position: absolute;
-                    bottom: -2px;
-                    left: 0;
-                    width: 0;
-                    height: 2px;
-                    background: #173628;
-                    transition: width 0.3s ease;
+
+                /* ── Tabs ── */
+                .tab-btn {
+                    height: 44px;
+                    padding: 0 16px;
+                    border: none;
+                    background: transparent;
+                    font-family: 'DM Sans', sans-serif;
+                    font-size: 13px;
+                    font-weight: 500;
+                    color: #888;
+                    cursor: pointer;
+                    border-bottom: 2px solid transparent;
+                    transition: color 0.15s, border-color 0.15s;
+                    white-space: nowrap;
+                    letter-spacing: 0.01em;
                 }
-                .nav-item:hover::after,
-                .nav-item.active::after {
-                    width: 100%;
+                .tab-btn:hover { color: #0F2318; }
+                .tab-btn.active {
+                    color: #0F2318;
+                    border-bottom-color: #0F2318;
                 }
+
+                /* ── Table rows ── */
                 .order-row {
-                    transition: all 0.25s ease;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 12px 14px;
+                    border-radius: 10px;
+                    border: 1px solid transparent;
+                    cursor: pointer;
+                    transition: background 0.15s, border-color 0.15s;
                 }
                 .order-row:hover {
-                    transform: translateX(4px);
-                    background: linear-gradient(135deg, rgba(23, 54, 40, 0.03) 0%, rgba(23, 54, 40, 0.01) 100%);
+                    background: #fafaf8;
+                    border-color: rgba(0,0,0,0.07);
                 }
-                .glow-dot {
-                    animation: glow 2s ease-in-out infinite;
+
+                /* ── Buttons ── */
+                .btn-primary {
+                    background: #0F2318;
+                    color: #fff;
+                    border: none;
+                    border-radius: 10px;
+                    padding: 11px 22px;
+                    font-family: 'DM Sans', sans-serif;
+                    font-size: 13px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    height: 44px;
+                    display: flex; align-items: center; gap: 6px;
+                    transition: background 0.15s, transform 0.1s;
+                    letter-spacing: 0.01em;
                 }
-                @keyframes glow {
-                    0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(16, 185, 129, 0.4); }
-                    50% { opacity: 0.7; box-shadow: 0 0 12px rgba(16, 185, 129, 0.6); }
+                .btn-primary:hover { background: #1a3d2a; }
+                .btn-primary:active { transform: scale(0.98); }
+                .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+                .btn-secondary {
+                    background: transparent;
+                    color: #0F2318;
+                    border: 1px solid rgba(0,0,0,0.12);
+                    border-radius: 10px;
+                    padding: 11px 22px;
+                    font-family: 'DM Sans', sans-serif;
+                    font-size: 13px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    height: 44px;
+                    transition: background 0.15s;
                 }
+                .btn-secondary:hover { background: #f5f4f0; }
+
+                /* ── Form inputs ── */
+                .form-input {
+                    width: 100%;
+                    background: #f8f7f4;
+                    border: 1px solid rgba(0,0,0,0.08);
+                    border-radius: 10px;
+                    padding: 0 14px;
+                    height: 44px;
+                    font-family: 'DM Sans', sans-serif;
+                    font-size: 14px;
+                    color: #0F2318;
+                    outline: none;
+                    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+                }
+                .form-input::placeholder { color: #c0bfb0; }
+                .form-input:focus {
+                    background: #fff;
+                    border-color: rgba(15,35,24,0.30);
+                    box-shadow: 0 0 0 3px rgba(15,35,24,0.06);
+                }
+                .form-textarea {
+                    width: 100%;
+                    background: #f8f7f4;
+                    border: 1px solid rgba(0,0,0,0.08);
+                    border-radius: 10px;
+                    padding: 12px 14px;
+                    font-family: 'DM Sans', sans-serif;
+                    font-size: 14px;
+                    color: #0F2318;
+                    outline: none;
+                    resize: none;
+                    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+                }
+                .form-textarea::placeholder { color: #c0bfb0; }
+                .form-textarea:focus {
+                    background: #fff;
+                    border-color: rgba(15,35,24,0.30);
+                    box-shadow: 0 0 0 3px rgba(15,35,24,0.06);
+                }
+
+                /* ── Badges ── */
+                .badge {
+                    display: inline-flex; align-items: center;
+                    padding: 3px 10px;
+                    border-radius: 20px;
+                    font-size: 11px;
+                    font-weight: 600;
+                    letter-spacing: 0.08em;
+                    text-transform: uppercase;
+                }
+                .badge-success { background: #eaf6ee; color: #1a6b34; }
+                .badge-warning { background: #fef7e7; color: #8a5a00; }
+                .badge-muted { background: #f2f1ee; color: #666; }
+                .badge-danger { background: #fdf0ef; color: #a02020; }
+                .badge-info { background: #eff5fe; color: #1a4a9e; }
+
+                /* ── Quick action cards ── */
+                .quick-action {
+                    background: #fff;
+                    border: 1px solid rgba(0,0,0,0.07);
+                    border-radius: 12px;
+                    padding: 20px;
+                    cursor: pointer;
+                    text-align: left;
+                    font-family: 'DM Sans', sans-serif;
+                    width: 100%;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.15s;
+                }
+                .quick-action:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 12px 32px rgba(0,0,0,0.09);
+                    border-color: rgba(15,35,24,0.12);
+                }
+
+                /* ── Live dot ── */
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.4; }
+                }
+                .live-dot {
+                    width: 7px; height: 7px;
+                    background: #2d9e5f;
+                    border-radius: 50%;
+                    animation: pulse 2s ease-in-out infinite;
+                }
+
+                /* ── Modal overlay ── */
+                .modal-overlay {
+                    position: fixed; inset: 0;
+                    background: rgba(0,0,0,0.4);
+                    z-index: 200;
+                    display: flex; align-items: center; justify-content: center;
+                    padding: 24px;
+                }
+                .modal-box {
+                    background: #fff;
+                    border-radius: 14px;
+                    max-width: 440px;
+                    width: 100%;
+                    padding: 28px;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.16);
+                }
+
+                /* ── Icon box ── */
+                .icon-box {
+                    width: 40px; height: 40px;
+                    border-radius: 10px;
+                    display: flex; align-items: center; justify-content: center;
+                    flex-shrink: 0;
+                }
+
+                /* ── Breadcrumb ── */
+                .breadcrumb-sep {
+                    font-size: 13px;
+                    color: #c0bfb0;
+                    margin: 0 6px;
+                }
+
+                /* ── Dropdown ── */
+                .topbar-icon-btn {
+                    width: 36px; height: 36px;
+                    border-radius: 8px;
+                    border: none;
+                    background: transparent;
+                    cursor: pointer;
+                    display: flex; align-items: center; justify-content: center;
+                    color: #666;
+                    transition: background 0.15s, color 0.15s;
+                    position: relative;
+                }
+                .topbar-icon-btn:hover { background: #f0f3f1; color: #0F2318; }
+
+                /* ── Chip filters ── */
+                .chip {
+                    display: inline-flex; align-items: center;
+                    padding: 5px 14px;
+                    border-radius: 20px;
+                    border: 1px solid rgba(0,0,0,0.08);
+                    font-size: 12px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    white-space: nowrap;
+                    transition: background 0.15s, border-color 0.15s;
+                    background: #fff;
+                    color: #555;
+                    letter-spacing: 0.03em;
+                }
+                .chip:hover { background: #f5f4f0; }
+                .chip.active { background: #0F2318; color: #fff; border-color: #0F2318; }
+
+                /* ── Section label ── */
+                .section-label {
+                    font-size: 11px;
+                    font-weight: 600;
+                    letter-spacing: 0.09em;
+                    text-transform: uppercase;
+                    color: #999;
+                }
+
+                /* Fade-in */
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(8px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .fade-in { animation: fadeIn 0.3s ease-out both; }
+
+                /* Top item card */
                 .top-item-card {
-                    transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+                    background: #fff;
+                    border: 1px solid rgba(0,0,0,0.07);
+                    border-radius: 12px;
+                    padding: 18px;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
                 }
                 .top-item-card:hover {
-                    transform: translateY(-3px) scale(1.01);
-                    box-shadow: 0 16px 32px -8px rgba(17, 54, 40, 0.1);
-                }
-                .fade-in {
-                    animation: fadeIn 0.5s ease-out;
-                }
-                @keyframes fadeIn {
-                    from { opacity: 0; transform: translateY(12px); }
-                    to { opacity: 1; transform: translateY(0); }
+                    transform: translateY(-2px);
+                    box-shadow: 0 12px 32px rgba(0,0,0,0.09);
                 }
             `}</style>
 
-            {/* Top Navigation — Editorial Style */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-black/[0.04]">
-                <div className="max-w-[1440px] mx-auto px-6 md:px-10 py-5 flex justify-between items-center">
-                    <div className="flex items-center gap-10">
-                        <h1 className="headline text-xl font-extrabold tracking-tight text-[#173628]">
-                            The Culinary Editorial
-                        </h1>
-                        <span className="hidden md:inline-block text-[10px] font-bold tracking-[0.3em] uppercase text-[#173628]/40 bg-[#173628]/5 px-3 py-1 rounded-full border border-[#173628]/10">
-                            Staff Portal
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <button className="relative p-2.5 hover:bg-[#173628]/5 rounded-xl transition-all">
-                            <span className="material-symbols-outlined text-[#173628]/60">notifications</span>
-                            <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 rounded-full glow-dot"></span>
-                        </button>
-                        <div className="w-px h-6 bg-black/[0.06]"></div>
-                        <button className="flex items-center gap-3 px-3 py-2 hover:bg-[#173628]/5 rounded-xl transition-all">
-                            <div className="w-8 h-8 bg-gradient-to-br from-[#173628] to-[#2a5a47] rounded-full flex items-center justify-center">
-                                <span className="text-white text-xs font-bold">CE</span>
-                            </div>
-                            <span className="hidden md:block text-sm font-semibold text-[#173628]/70">Chef Admin</span>
-                        </button>
-                    </div>
+            {/* ─────────────────────────── LEFT SIDEBAR 64px ─────────────────────── */}
+            <aside style={{
+                width: 64,
+                minHeight: '100vh',
+                background: '#fff',
+                borderRight: '1px solid rgba(0,0,0,0.07)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                padding: '16px 0',
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                bottom: 0,
+                zIndex: 100,
+            }}>
+                {/* Logo */}
+                <div style={{
+                    width: 36, height: 36,
+                    background: '#0F2318',
+                    borderRadius: 10,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    marginBottom: 28,
+                    flexShrink: 0,
+                }}>
+                    <span style={{ color: '#fff', fontSize: 14, fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>CE</span>
                 </div>
-            </header>
 
-            {/* Main Content */}
-            <main className="pt-28 pb-16 px-6 md:px-10">
-                <div className="max-w-[1440px] mx-auto">
-                    {/* Welcome Section */}
-                    <div className="mb-10 fade-in">
-                        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                {/* Nav icons */}
+                <nav style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
+                    {navItems.map((item) => (
+                        <button
+                            key={item.route}
+                            className={`sidebar-nav-btn ${activeTab === item.label.toLowerCase() ? 'active' : ''}`}
+                            title={item.label}
+                            onClick={() => item.route !== '#' ? navigate(item.route) : undefined}
+                        >
+                            <span className="material-symbols-outlined" style={{ fontSize: 20 }}>{item.icon}</span>
+                        </button>
+                    ))}
+                </nav>
+
+                {/* Logout */}
+                <button className="sidebar-nav-btn" title="Logout" style={{ marginTop: 'auto' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 20 }}>logout</span>
+                </button>
+            </aside>
+
+            {/* ─────────────────────────── RIGHT PANEL ─────────────────────────── */}
+            <div style={{ marginLeft: 64, flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+
+                {/* ── TOP BAR 56px ── */}
+                <header style={{
+                    height: 56,
+                    background: '#fff',
+                    borderBottom: '1px solid rgba(0,0,0,0.07)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0 40px',
+                    position: 'fixed',
+                    top: 0,
+                    left: 64,
+                    right: 0,
+                    zIndex: 99,
+                }}>
+                    {/* Breadcrumb */}
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <span style={{ fontSize: 13, color: '#999', fontWeight: 400 }}>Staff portal</span>
+                        <span className="breadcrumb-sep">›</span>
+                        <span style={{ fontSize: 13, color: '#0F2318', fontWeight: 500 }}>Dashboard</span>
+                    </div>
+
+                    {/* Right controls */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <input className="topbar-search" placeholder="Search…" />
+
+                        <button className="topbar-icon-btn">
+                            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>notifications</span>
+                            <span style={{
+                                position: 'absolute', top: 6, right: 6,
+                                width: 6, height: 6,
+                                background: '#2d9e5f',
+                                borderRadius: '50%',
+                                border: '1.5px solid #fff',
+                            }} />
+                        </button>
+
+                        <div style={{ width: 1, height: 20, background: 'rgba(0,0,0,0.08)', margin: '0 2px' }} />
+
+                        {/* Avatar */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '4px 8px', borderRadius: 8 }}>
+                            <div style={{
+                                width: 28, height: 28,
+                                background: '#0F2318',
+                                borderRadius: '50%',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                                <span style={{ color: '#fff', fontSize: 10, fontWeight: 600 }}>CA</span>
+                            </div>
+                            <span style={{ fontSize: 13, fontWeight: 500, color: '#0F2318' }}>Chef Admin</span>
+                        </div>
+                    </div>
+                </header>
+
+                {/* ── MAIN CONTENT ── */}
+                <main style={{ marginTop: 56, padding: '40px', flex: 1 }}>
+
+                    {/* ── Page header ── */}
+                    <div style={{ marginBottom: 32 }} className="fade-in">
+                        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
                             <div>
-                                <span className="text-[#173628]/40 font-bold tracking-[0.3em] uppercase text-[10px] mb-3 block">
-                                    Dashboard Overview
-                                </span>
-                                <h2 className="headline text-4xl md:text-5xl font-bold text-[#173628] leading-[1.1] tracking-tight">
-                                    Welcome back, <span className="italic font-light">Chef.</span> 👨‍🍳
-                                </h2>
-                                <p className="text-[#173628]/50 mt-3 font-light text-lg">
+                                <p className="section-label" style={{ marginBottom: 8 }}>Dashboard overview</p>
+                                <h1 style={{
+                                    fontFamily: "'DM Serif Display', serif",
+                                    fontSize: 40,
+                                    fontWeight: 400,
+                                    color: '#0F2318',
+                                    lineHeight: 1.1,
+                                    letterSpacing: '-0.01em',
+                                }}>
+                                    Welcome back, <em>Chef.</em>
+                                </h1>
+                                <p style={{ fontSize: 14, color: '#888', marginTop: 8, fontWeight: 300 }}>
                                     Here's what's happening with your canteen today
                                 </p>
                             </div>
-                            <div className="flex items-center gap-2 text-sm">
-                                <span className="w-2 h-2 bg-emerald-500 rounded-full glow-dot"></span>
-                                <span className="text-[#173628]/40 font-medium">Live</span>
-                                <span className="text-[#173628]/20">•</span>
-                                <span className="text-[#173628]/40 font-light">{new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Quick Stats */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-                        {/* Revenue Card — Featured */}
-                        <div className="stat-card bg-gradient-to-br from-[#173628] to-[#1c4a38] rounded-[1.5rem] p-6 text-white shadow-xl relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-2xl"></div>
-                            <div className="relative z-10">
-                                <div className="flex items-center justify-between mb-6">
-                                    <span className="material-symbols-outlined text-2xl opacity-60">payments</span>
-                                    <span className="text-[10px] font-bold tracking-widest uppercase bg-white/15 px-3 py-1 rounded-full">
-                                        {stats ? `+${stats.revenueGrowth}%` : '+12%'}
-                                    </span>
-                                </div>
-                                <h3 className="text-3xl font-bold mb-1 tracking-tight">
-                                    ₹{stats ? stats.todayRevenue.toLocaleString() : '24,580'}
-                                </h3>
-                                <p className="text-white/50 text-xs font-medium tracking-wider uppercase">Today's Revenue</p>
-                            </div>
-                        </div>
-
-                        {/* Orders Card */}
-                        <div className="stat-card bg-white rounded-[1.5rem] p-6 border border-black/[0.04] shadow-sm">
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-blue-600 text-xl">receipt_long</span>
-                                </div>
-                                <span className="text-emerald-600 text-xs font-bold bg-emerald-50 px-2.5 py-1 rounded-full">
-                                    {stats ? `+${stats.ordersGrowth}%` : '+8%'}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span className="live-dot" />
+                                <span style={{ fontSize: 12, color: '#999', fontWeight: 400 }}>Live</span>
+                                <span style={{ fontSize: 12, color: '#ccc', margin: '0 4px' }}>·</span>
+                                <span style={{ fontSize: 12, color: '#aaa', fontWeight: 300 }}>
+                                    {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                                 </span>
                             </div>
-                            <h3 className="text-2xl font-bold text-[#173628] mb-1 tracking-tight">
-                                {stats ? stats.todayOrders : '142'}
-                            </h3>
-                            <p className="text-[#173628]/40 text-xs font-medium tracking-wider uppercase">Orders Today</p>
-                        </div>
-
-                        {/* Rating Card */}
-                        <div className="stat-card bg-white rounded-[1.5rem] p-6 border border-black/[0.04] shadow-sm">
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="w-11 h-11 bg-amber-50 rounded-xl flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-amber-500 text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                                </div>
-                                <span className="text-emerald-600 text-xs font-bold bg-emerald-50 px-2.5 py-1 rounded-full">+0.2</span>
-                            </div>
-                            <h3 className="text-2xl font-bold text-[#173628] mb-1 tracking-tight">
-                                {stats ? stats.avgRating.toFixed(1) : '4.8'}
-                            </h3>
-                            <p className="text-[#173628]/40 text-xs font-medium tracking-wider uppercase">Avg Rating</p>
-                        </div>
-
-                        {/* Low Stock Card */}
-                        <div className="stat-card bg-white rounded-[1.5rem] p-6 border border-black/[0.04] shadow-sm">
-                            <div className="flex items-center justify-between mb-6">
-                                <div className="w-11 h-11 bg-rose-50 rounded-xl flex items-center justify-center">
-                                    <span className="material-symbols-outlined text-rose-500 text-xl">inventory_2</span>
-                                </div>
-                                <span className="text-rose-600 text-xs font-bold bg-rose-50 px-2.5 py-1 rounded-full">Alert</span>
-                            </div>
-                            <h3 className="text-2xl font-bold text-[#173628] mb-1 tracking-tight">
-                                {stats ? stats.lowStockItems : '8'}
-                            </h3>
-                            <p className="text-[#173628]/40 text-xs font-medium tracking-wider uppercase">Items Low Stock</p>
                         </div>
                     </div>
 
-                    {/* Tab Navigation — Editorial Style */}
-                    <div className="bg-white rounded-[1.5rem] border border-black/[0.04] shadow-sm mb-10 overflow-hidden">
-                        <div className="flex border-b border-black/[0.04] px-2 pt-2 overflow-x-auto">
-                            {[
-                                { key: 'overview', label: 'Overview', icon: 'dashboard' },
-                                { key: 'inventory', label: 'Inventory', icon: 'inventory_2', route: '/inventory' },
-                                { key: 'kpi', label: 'KPI Dashboard', icon: 'analytics', route: '/kpi-dashboard' },
-                                { key: 'menu', label: 'Menu Management', icon: 'restaurant_menu' },
-                                { key: 'orders', label: 'Orders', icon: 'receipt_long' },
-                            ].map((tab) => (
+                    {/* ── Stats strip ── */}
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: 16,
+                        marginBottom: 32,
+                    }}>
+                        {/* Revenue — featured dark card */}
+                        <div className="stat-card featured" style={{ background: '#0F2318' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                                <div className="icon-box" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                                    <span className="material-symbols-outlined" style={{ color: 'rgba(255,255,255,0.7)', fontSize: 18 }}>payments</span>
+                                </div>
+                                <span className="badge" style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.8)', fontSize: 11 }}>
+                                    +{stats?.revenueGrowth ?? 12}%
+                                </span>
+                            </div>
+                            <div style={{ fontSize: 28, fontWeight: 600, color: '#fff', letterSpacing: '-0.02em', marginBottom: 4 }}>
+                                ₹{(stats?.todayRevenue ?? 24580).toLocaleString('en-IN')}
+                            </div>
+                            <div className="section-label" style={{ color: 'rgba(255,255,255,0.4)' }}>Today's revenue</div>
+                        </div>
+
+                        {/* Orders */}
+                        <div className="stat-card">
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                                <div className="icon-box" style={{ background: '#eff5fe' }}>
+                                    <span className="material-symbols-outlined" style={{ color: '#3a72c8', fontSize: 18 }}>receipt_long</span>
+                                </div>
+                                <span className="badge badge-success">+{stats?.ordersGrowth ?? 8}%</span>
+                            </div>
+                            <div style={{ fontSize: 28, fontWeight: 600, color: '#0F2318', letterSpacing: '-0.02em', marginBottom: 4 }}>
+                                {stats?.todayOrders ?? 142}
+                            </div>
+                            <div className="section-label">Orders today</div>
+                        </div>
+
+                        {/* Rating */}
+                        <div className="stat-card">
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                                <div className="icon-box" style={{ background: '#fef7e7' }}>
+                                    <span className="material-symbols-outlined" style={{ color: '#c48a00', fontSize: 18, fontVariationSettings: "'FILL' 1" }}>star</span>
+                                </div>
+                                <span className="badge badge-warning">+0.2</span>
+                            </div>
+                            <div style={{ fontSize: 28, fontWeight: 600, color: '#0F2318', letterSpacing: '-0.02em', marginBottom: 4 }}>
+                                {(stats?.avgRating ?? 4.8).toFixed(1)}
+                            </div>
+                            <div className="section-label">Avg rating</div>
+                        </div>
+
+                        {/* Low stock */}
+                        <div className="stat-card">
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                                <div className="icon-box" style={{ background: '#fdf0ef' }}>
+                                    <span className="material-symbols-outlined" style={{ color: '#c03030', fontSize: 18 }}>inventory_2</span>
+                                </div>
+                                <span className="badge badge-danger">Alert</span>
+                            </div>
+                            <div style={{ fontSize: 28, fontWeight: 600, color: '#0F2318', letterSpacing: '-0.02em', marginBottom: 4 }}>
+                                {stats?.lowStockItems ?? 8}
+                            </div>
+                            <div className="section-label">Low stock items</div>
+                        </div>
+                    </div>
+
+                    {/* ── Tab container ── */}
+                    <div style={{
+                        background: '#fff',
+                        border: '1px solid rgba(0,0,0,0.07)',
+                        borderRadius: 14,
+                        marginBottom: 32,
+                        overflow: 'hidden',
+                    }}>
+                        {/* Tab bar */}
+                        <div style={{
+                            display: 'flex',
+                            borderBottom: '1px solid rgba(0,0,0,0.07)',
+                            overflowX: 'auto',
+                            padding: '0 16px',
+                        }}>
+                            {tabs.map((tab) => (
                                 <button
                                     key={tab.key}
+                                    className={`tab-btn ${activeTab === tab.key ? 'active' : ''}`}
                                     onClick={() => tab.route ? navigate(tab.route) : setActiveTab(tab.key)}
-                                    className={`flex items-center gap-2 px-5 py-4 font-medium text-[13px] whitespace-nowrap transition-all rounded-t-xl ${
-                                        activeTab === tab.key
-                                            ? 'text-[#173628] bg-[#173628]/[0.04] border-b-2 border-[#173628]'
-                                            : 'text-[#173628]/40 hover:text-[#173628]/70 hover:bg-black/[0.02]'
-                                    }`}
                                 >
-                                    <span className="material-symbols-outlined text-[18px]">{tab.icon}</span>
                                     {tab.label}
                                 </button>
                             ))}
                         </div>
 
-                        {/* Tab Content */}
-                        <div className="p-6 md:p-8 fade-in">
+                        {/* Tab content */}
+                        <div style={{ padding: '28px 32px' }} className="fade-in">
+
+                            {/* ── OVERVIEW ── */}
                             {activeTab === 'overview' && (
-                                <div className="space-y-10">
-                                    {/* Recent Orders */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+
+                                    {/* Chip filters */}
+                                    <div style={{ display: 'flex', gap: 8, overflowX: 'auto' }}>
+                                        {['All', 'Preparing', 'Ready', 'Completed', 'Cancelled'].map((f, i) => (
+                                            <button key={f} className={`chip ${i === 0 ? 'active' : ''}`}>{f}</button>
+                                        ))}
+                                    </div>
+
+                                    {/* Recent orders */}
                                     <div>
-                                        <div className="flex items-center justify-between mb-6">
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                                             <div>
-                                                <h3 className="headline text-xl font-bold text-[#173628]">
-                                                    Recent Orders
-                                                </h3>
-                                                <p className="text-[#173628]/40 text-sm font-light mt-1">Live order feed</p>
+                                                <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, fontWeight: 400, color: '#0F2318' }}>Recent orders</h2>
+                                                <p style={{ fontSize: 13, color: '#999', fontWeight: 300, marginTop: 2 }}>Live order feed</p>
                                             </div>
-                                            <button className="text-[#173628]/40 text-[11px] font-bold tracking-[0.2em] uppercase hover:text-[#173628] transition flex items-center gap-2">
-                                                View All
-                                                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                                            <button style={{
+                                                fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase',
+                                                color: '#888', background: 'none', border: 'none', cursor: 'pointer',
+                                                display: 'flex', alignItems: 'center', gap: 4,
+                                            }}>
+                                                View all
+                                                <span className="material-symbols-outlined" style={{ fontSize: 14 }}>arrow_forward</span>
                                             </button>
                                         </div>
-                                        <div className="space-y-2">
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                             {[
-                                                { id: '#ORD-1234', customer: 'Rahul Sharma', items: '2 items', amount: '₹450', status: 'Preparing', time: '2 mins ago' },
-                                                { id: '#ORD-1233', customer: 'Priya Patel', items: '1 item', amount: '₹280', status: 'Ready', time: '5 mins ago' },
-                                                { id: '#ORD-1232', customer: 'Amit Kumar', items: '3 items', amount: '₹620', status: 'Completed', time: '12 mins ago' },
+                                                { id: '#ORD-1234', customer: 'Rahul Sharma', items: '2 items', amount: '₹450', status: 'Preparing', time: '2 min ago' },
+                                                { id: '#ORD-1233', customer: 'Priya Patel', items: '1 item', amount: '₹280', status: 'Ready', time: '5 min ago' },
+                                                { id: '#ORD-1232', customer: 'Amit Kumar', items: '3 items', amount: '₹620', status: 'Completed', time: '12 min ago' },
                                             ].map((order, idx) => (
-                                                <div key={idx} className="order-row flex items-center justify-between p-4 rounded-xl cursor-pointer border border-transparent hover:border-[#173628]/[0.06]">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 bg-[#173628]/[0.04] rounded-xl flex items-center justify-center">
-                                                            <span className="material-symbols-outlined text-[#173628]/60 text-lg">receipt</span>
+                                                <div key={idx} className="order-row">
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                        <div className="icon-box" style={{ background: '#f5f4f0' }}>
+                                                            <span className="material-symbols-outlined" style={{ color: '#888', fontSize: 17 }}>receipt</span>
                                                         </div>
                                                         <div>
-                                                            <p className="font-semibold text-[#173628] text-sm">{order.id}</p>
-                                                            <p className="text-xs text-[#173628]/40 font-light">{order.customer} • {order.items}</p>
+                                                            <p style={{ fontSize: 13, fontWeight: 600, color: '#0F2318' }}>{order.id}</p>
+                                                            <p style={{ fontSize: 12, color: '#aaa', fontWeight: 300, marginTop: 1 }}>{order.customer} · {order.items}</p>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-4">
-                                                        <span className="font-bold text-[#173628] text-sm">{order.amount}</span>
-                                                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${
-                                                            order.status === 'Preparing' ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' :
-                                                            order.status === 'Ready' ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' :
-                                                            'bg-[#173628]/[0.04] text-[#173628]/50 ring-1 ring-[#173628]/10'
-                                                        }`}>
-                                                            {order.status}
-                                                        </span>
-                                                        <span className="text-[11px] text-[#173628]/30 font-light hidden sm:block">{order.time}</span>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                                        <span style={{ fontSize: 13, fontWeight: 600, color: '#0F2318' }}>{order.amount}</span>
+                                                        <span className={`badge ${
+                                                            order.status === 'Preparing' ? 'badge-warning' :
+                                                            order.status === 'Ready' ? 'badge-success' : 'badge-muted'
+                                                        }`}>{order.status}</span>
+                                                        <span style={{ fontSize: 11, color: '#ccc', fontWeight: 300 }}>{order.time}</span>
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
                                     </div>
 
-                                    {/* Popular Items */}
+                                    {/* Top sellers */}
                                     <div>
-                                        <div className="flex items-center justify-between mb-6">
-                                            <div>
-                                                <h3 className="headline text-xl font-bold text-[#173628]">
-                                                    Top Selling Items Today
-                                                </h3>
-                                                <p className="text-[#173628]/40 text-sm font-light mt-1">Best performers from the kitchen</p>
-                                            </div>
+                                        <div style={{ marginBottom: 16 }}>
+                                            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, fontWeight: 400, color: '#0F2318' }}>Top selling today</h2>
+                                            <p style={{ fontSize: 13, color: '#999', fontWeight: 300, marginTop: 2 }}>Best performers from the kitchen</p>
                                         </div>
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
                                             {[
-                                                { name: 'Masala Dosa', sold: 45, revenue: '₹6,750', emoji: '🥞', rank: 1 },
-                                                { name: 'Paneer Butter Masala', sold: 38, revenue: '₹7,220', emoji: '🍛', rank: 2 },
-                                                { name: 'Veg Biryani', sold: 32, revenue: '₹4,800', emoji: '🍚', rank: 3 },
+                                                { name: 'Masala Dosa', sold: 45, revenue: '₹6,750', rank: 1 },
+                                                { name: 'Paneer Butter Masala', sold: 38, revenue: '₹7,220', rank: 2 },
+                                                { name: 'Veg Biryani', sold: 32, revenue: '₹4,800', rank: 3 },
                                             ].map((item, idx) => (
-                                                <div key={idx} className="top-item-card p-5 bg-gradient-to-br from-[#173628]/[0.02] to-transparent rounded-2xl border border-[#173628]/[0.06] relative overflow-hidden">
-                                                    <div className="absolute top-3 right-3 w-7 h-7 bg-[#173628]/[0.06] rounded-full flex items-center justify-center">
-                                                        <span className="text-[10px] font-bold text-[#173628]/50">#{item.rank}</span>
+                                                <div key={idx} className="top-item-card">
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                                                        <span className="badge badge-muted">#{item.rank}</span>
+                                                        <span className="material-symbols-outlined" style={{ color: '#ddd', fontSize: 16 }}>restaurant</span>
                                                     </div>
-                                                    <div className="text-2xl mb-3">{item.emoji}</div>
-                                                    <h4 className="font-bold text-[#173628] text-sm mb-3">{item.name}</h4>
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-xs text-[#173628]/40 font-light">{item.sold} sold</span>
-                                                        <span className="font-bold text-[#173628] text-sm">{item.revenue}</span>
+                                                    <p style={{ fontSize: 14, fontWeight: 600, color: '#0F2318', marginBottom: 10 }}>{item.name}</p>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                                                        <span style={{ fontSize: 12, color: '#bbb', fontWeight: 300 }}>{item.sold} sold</span>
+                                                        <span style={{ fontSize: 15, fontWeight: 600, color: '#0F2318' }}>{item.revenue}</span>
                                                     </div>
                                                 </div>
                                             ))}
@@ -410,57 +764,52 @@ const StaffDash = () => {
                                 </div>
                             )}
 
+                            {/* ── MENU ── */}
                             {activeTab === 'menu' && (
                                 <div className="fade-in">
-                                    <div className="flex justify-between items-center mb-8">
+                                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24 }}>
                                         <div>
-                                            <h3 className="headline text-xl font-bold text-[#173628]">
-                                                Menu Items
-                                            </h3>
-                                            <p className="text-[#173628]/40 text-sm font-light mt-1">Manage your culinary offerings</p>
+                                            <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, fontWeight: 400, color: '#0F2318' }}>Menu items</h2>
+                                            <p style={{ fontSize: 13, color: '#999', fontWeight: 300, marginTop: 2 }}>Manage your culinary offerings</p>
                                         </div>
-                                        <button 
-                                            onClick={() => setShowAddModal(true)}
-                                            className="px-5 py-2.5 bg-[#173628] text-white rounded-full font-bold text-[11px] tracking-[0.15em] uppercase hover:bg-[#173628]/90 transition-all flex items-center gap-2 shadow-lg shadow-[#173628]/20"
-                                        >
-                                            <span className="material-symbols-outlined text-sm">add</span>
-                                            Add New Item
+                                        <button className="btn-primary" onClick={() => setShowAddModal(true)}>
+                                            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
+                                            Add item
                                         </button>
                                     </div>
-                                    
+
                                     {menuItems.length === 0 ? (
-                                        <div className="text-center py-12">
-                                            <span className="material-symbols-outlined text-6xl text-[#173628]/20 mb-4">restaurant_menu</span>
-                                            <p className="text-[#173628]/40 text-sm">No menu items yet. Add your first item!</p>
+                                        <div style={{ textAlign: 'center', padding: '48px 0' }}>
+                                            <span className="material-symbols-outlined" style={{ fontSize: 48, color: '#ddd', display: 'block', marginBottom: 12 }}>restaurant_menu</span>
+                                            <p style={{ fontSize: 13, color: '#bbb' }}>No menu items yet. Add your first item!</p>
                                         </div>
                                     ) : (
-                                        <div className="space-y-2">
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                             {menuItems.map((item) => (
-                                                <div key={item.menuItemId} className="order-row flex items-center justify-between p-4 rounded-xl cursor-pointer border border-transparent hover:border-[#173628]/[0.06]">
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="w-12 h-12 bg-[#173628]/[0.03] rounded-xl flex items-center justify-center text-2xl overflow-hidden">
-                                                            {item.image ? (
-                                                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                                                            ) : (
-                                                                <span className="material-symbols-outlined text-[#173628]/40">restaurant</span>
-                                                            )}
+                                                <div key={item.menuItemId} className="order-row">
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                        <div style={{
+                                                            width: 44, height: 44, borderRadius: 10, overflow: 'hidden',
+                                                            background: '#f5f4f0', flexShrink: 0,
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        }}>
+                                                            {item.image
+                                                                ? <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                : <span className="material-symbols-outlined" style={{ color: '#bbb', fontSize: 18 }}>restaurant</span>
+                                                            }
                                                         </div>
                                                         <div>
-                                                            <p className="font-semibold text-[#173628] text-sm">{item.name}</p>
-                                                            <p className="text-xs text-[#173628]/40 font-light">{item.category}</p>
+                                                            <p style={{ fontSize: 13, fontWeight: 600, color: '#0F2318' }}>{item.name}</p>
+                                                            <p style={{ fontSize: 12, color: '#aaa', fontWeight: 300, marginTop: 1 }}>{item.category}</p>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-5">
-                                                        <span className="font-bold text-[#173628] text-sm">₹{item.price.toFixed(2)}</span>
-                                                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase ${
-                                                            item.isAvailable 
-                                                                ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' 
-                                                                : 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
-                                                        }`}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                                        <span style={{ fontSize: 13, fontWeight: 600, color: '#0F2318' }}>₹{item.price.toFixed(2)}</span>
+                                                        <span className={`badge ${item.isAvailable ? 'badge-success' : 'badge-danger'}`}>
                                                             {item.stockStatus}
                                                         </span>
-                                                        <button className="p-2 hover:bg-[#173628]/[0.04] rounded-lg transition">
-                                                            <span className="material-symbols-outlined text-[#173628]/40 text-lg">edit</span>
+                                                        <button className="topbar-icon-btn">
+                                                            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span>
                                                         </button>
                                                     </div>
                                                 </div>
@@ -470,33 +819,28 @@ const StaffDash = () => {
                                 </div>
                             )}
 
+                            {/* ── ORDERS ── */}
                             {activeTab === 'orders' && (
                                 <div className="fade-in">
-                                    <div className="flex items-center justify-between mb-8">
-                                        <div>
-                                            <h3 className="headline text-xl font-bold text-[#173628]">
-                                                All Orders
-                                            </h3>
-                                            <p className="text-[#173628]/40 text-sm font-light mt-1">Complete order history</p>
-                                        </div>
+                                    <div style={{ marginBottom: 24 }}>
+                                        <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, fontWeight: 400, color: '#0F2318' }}>All orders</h2>
+                                        <p style={{ fontSize: 13, color: '#999', fontWeight: 300, marginTop: 2 }}>Complete order history</p>
                                     </div>
-                                    <div className="space-y-2">
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                         {Array.from({ length: 8 }).map((_, idx) => (
-                                            <div key={idx} className="order-row flex items-center justify-between p-4 rounded-xl cursor-pointer border border-transparent hover:border-[#173628]/[0.06]">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 bg-[#173628]/[0.04] rounded-xl flex items-center justify-center">
-                                                        <span className="material-symbols-outlined text-[#173628]/60 text-lg">receipt</span>
+                                            <div key={idx} className="order-row">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                                    <div className="icon-box" style={{ background: '#f5f4f0' }}>
+                                                        <span className="material-symbols-outlined" style={{ color: '#aaa', fontSize: 17 }}>receipt</span>
                                                     </div>
                                                     <div>
-                                                        <span className="font-mono text-sm text-[#173628]/60">#ORD-{1234 - idx}</span>
-                                                        <p className="text-xs text-[#173628]/40 font-light">Customer {idx + 1}</p>
+                                                        <span style={{ fontSize: 13, fontFamily: 'monospace', color: '#555', fontWeight: 500 }}>#ORD-{1234 - idx}</span>
+                                                        <p style={{ fontSize: 12, color: '#bbb', fontWeight: 300, marginTop: 1 }}>Customer {idx + 1}</p>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-4">
-                                                    <span className="font-bold text-[#173628] text-sm">₹{Math.floor(Math.random() * 500) + 200}</span>
-                                                    <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-bold tracking-wider uppercase ring-1 ring-emerald-200">
-                                                        Completed
-                                                    </span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                                    <span style={{ fontSize: 13, fontWeight: 600, color: '#0F2318' }}>₹{((idx + 2) * 173).toLocaleString()}</span>
+                                                    <span className="badge badge-success">Completed</span>
                                                 </div>
                                             </div>
                                         ))}
@@ -506,155 +850,155 @@ const StaffDash = () => {
                         </div>
                     </div>
 
-                    {/* Quick Action Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        <button 
-                            onClick={() => navigate('/inventory')}
-                            className="stat-card group p-6 bg-white rounded-[1.5rem] border border-black/[0.04] text-left hover:border-[#173628]/10"
-                        >
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <span className="material-symbols-outlined text-blue-600">inventory_2</span>
+                    {/* ── Quick action cards ── */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+                        <button className="quick-action" onClick={() => navigate('/inventory')}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+                                <div className="icon-box" style={{ background: '#eff5fe' }}>
+                                    <span className="material-symbols-outlined" style={{ color: '#3a72c8', fontSize: 20 }}>inventory_2</span>
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-[#173628] text-sm">Inventory Tracking</h3>
-                                    <p className="text-[11px] text-[#173628]/40 font-light">Monitor stock levels</p>
+                                    <p style={{ fontSize: 14, fontWeight: 600, color: '#0F2318' }}>Inventory tracking</p>
+                                    <p style={{ fontSize: 12, color: '#aaa', fontWeight: 300 }}>Monitor stock levels</p>
                                 </div>
                             </div>
-                            <span className="text-[#173628]/30 text-[10px] font-bold tracking-[0.2em] uppercase flex items-center gap-1 group-hover:text-[#173628]/60 transition">
-                                Open <span className="material-symbols-outlined text-xs group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                            <span className="section-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                Open
+                                <span className="material-symbols-outlined" style={{ fontSize: 12 }}>arrow_forward</span>
                             </span>
                         </button>
 
-                        <button 
-                            onClick={() => navigate('/kpi-dashboard')}
-                            className="stat-card group p-6 bg-white rounded-[1.5rem] border border-black/[0.04] text-left hover:border-[#173628]/10"
-                        >
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <span className="material-symbols-outlined text-purple-600">analytics</span>
+                        <button className="quick-action" onClick={() => navigate('/kpi-dashboard')}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+                                <div className="icon-box" style={{ background: '#f3effd' }}>
+                                    <span className="material-symbols-outlined" style={{ color: '#6c4ab5', fontSize: 20 }}>analytics</span>
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-[#173628] text-sm">KPI Dashboard</h3>
-                                    <p className="text-[11px] text-[#173628]/40 font-light">Performance metrics</p>
+                                    <p style={{ fontSize: 14, fontWeight: 600, color: '#0F2318' }}>KPI dashboard</p>
+                                    <p style={{ fontSize: 12, color: '#aaa', fontWeight: 300 }}>Performance metrics</p>
                                 </div>
                             </div>
-                            <span className="text-[#173628]/30 text-[10px] font-bold tracking-[0.2em] uppercase flex items-center gap-1 group-hover:text-[#173628]/60 transition">
-                                Open <span className="material-symbols-outlined text-xs group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                            <span className="section-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                Open
+                                <span className="material-symbols-outlined" style={{ fontSize: 12 }}>arrow_forward</span>
                             </span>
                         </button>
 
-                        <button 
-                            className="stat-card group p-6 bg-gradient-to-br from-[#173628] to-[#1c4a38] rounded-[1.5rem] text-left relative overflow-hidden"
-                        >
-                            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-8 -mt-8 blur-xl"></div>
-                            <div className="relative z-10">
-                                <div className="flex items-center gap-4 mb-4">
-                                    <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                                        <span className="material-symbols-outlined text-white/80">download</span>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-white text-sm">Export Report</h3>
-                                        <p className="text-[11px] text-white/40 font-light">Download daily summary</p>
-                                    </div>
+                        {/* Featured export card */}
+                        <button className="quick-action" style={{ background: '#0F2318', borderColor: 'transparent' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+                                <div className="icon-box" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                                    <span className="material-symbols-outlined" style={{ color: 'rgba(255,255,255,0.7)', fontSize: 20 }}>download</span>
                                 </div>
-                                <span className="text-white/30 text-[10px] font-bold tracking-[0.2em] uppercase flex items-center gap-1 group-hover:text-white/60 transition">
-                                    Generate <span className="material-symbols-outlined text-xs group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                                </span>
+                                <div>
+                                    <p style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>Export report</p>
+                                    <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 300 }}>Download daily summary</p>
+                                </div>
                             </div>
+                            <span className="section-label" style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'rgba(255,255,255,0.35)' }}>
+                                Generate
+                                <span className="material-symbols-outlined" style={{ fontSize: 12 }}>arrow_forward</span>
+                            </span>
                         </button>
                     </div>
-                </div>
-            </main>
+                </main>
+            </div>
 
-            {/* Add Menu Item Modal */}
+            {/* ─────────────────────────── ADD ITEM MODAL ─────────────────────────── */}
             {showAddModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="headline text-xl font-bold text-[#173628]">Add New Menu Item</h3>
-                            <button 
+                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowAddModal(false)}>
+                    <div className="modal-box">
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+                            <div>
+                                <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, fontWeight: 400, color: '#0F2318' }}>Add menu item</h2>
+                                <p style={{ fontSize: 13, color: '#aaa', fontWeight: 300, marginTop: 2 }}>Fill in the details below</p>
+                            </div>
+                            <button
+                                className="topbar-icon-btn"
                                 onClick={() => setShowAddModal(false)}
-                                className="p-2 hover:bg-[#173628]/5 rounded-lg transition"
+                                style={{ width: 32, height: 32 }}
                             >
-                                <span className="material-symbols-outlined text-[#173628]/60">close</span>
+                                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>close</span>
                             </button>
                         </div>
-                        
-                        <form onSubmit={handleAddMenuItem} className="space-y-4">
+
+                        <form onSubmit={handleAddMenuItem} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                             <div>
-                                <label className="block text-sm font-medium text-[#173628]/70 mb-2">Item Name</label>
+                                <label className="section-label" style={{ display: 'block', marginBottom: 8 }}>Item name</label>
                                 <input
                                     type="text"
                                     required
+                                    className="form-input"
+                                    placeholder="e.g., Masala Dosa"
                                     value={newItem.name}
                                     onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                                    className="w-full px-4 py-2.5 border border-[#173628]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173628]/20 focus:border-[#173628]/30"
-                                    placeholder="e.g., Masala Dosa"
                                 />
                             </div>
-                            
-                            <div>
-                                <label className="block text-sm font-medium text-[#173628]/70 mb-2">Category</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={newItem.category}
-                                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                                    className="w-full px-4 py-2.5 border border-[#173628]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173628]/20 focus:border-[#173628]/30"
-                                    placeholder="e.g., South Indian"
-                                />
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                                <div>
+                                    <label className="section-label" style={{ display: 'block', marginBottom: 8 }}>Category</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="form-input"
+                                        placeholder="e.g., South Indian"
+                                        value={newItem.category}
+                                        onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="section-label" style={{ display: 'block', marginBottom: 8 }}>Price (₹)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        required
+                                        className="form-input"
+                                        placeholder="150"
+                                        value={newItem.price}
+                                        onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
+                                    />
+                                </div>
                             </div>
-                            
+
                             <div>
-                                <label className="block text-sm font-medium text-[#173628]/70 mb-2">Price (₹)</label>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    required
-                                    value={newItem.price}
-                                    onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
-                                    className="w-full px-4 py-2.5 border border-[#173628]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173628]/20 focus:border-[#173628]/30"
-                                    placeholder="e.g., 150"
-                                />
-                            </div>
-                            
-                            <div>
-                                <label className="block text-sm font-medium text-[#173628]/70 mb-2">Description</label>
+                                <label className="section-label" style={{ display: 'block', marginBottom: 8 }}>Description</label>
                                 <textarea
-                                    value={newItem.description}
-                                    onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                                    className="w-full px-4 py-2.5 border border-[#173628]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173628]/20 focus:border-[#173628]/30 resize-none"
+                                    className="form-textarea"
                                     rows={3}
                                     placeholder="Brief description of the item"
+                                    value={newItem.description}
+                                    onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
                                 />
                             </div>
-                            
+
                             <div>
-                                <label className="block text-sm font-medium text-[#173628]/70 mb-2">Image URL (optional)</label>
+                                <label className="section-label" style={{ display: 'block', marginBottom: 8 }}>Image URL <span style={{ textTransform: 'none', fontSize: 11, color: '#bbb', letterSpacing: 0, fontWeight: 400 }}>(optional)</span></label>
                                 <input
                                     type="url"
+                                    className="form-input"
+                                    placeholder="https://example.com/image.jpg"
                                     value={newItem.image}
                                     onChange={(e) => setNewItem({ ...newItem, image: e.target.value })}
-                                    className="w-full px-4 py-2.5 border border-[#173628]/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#173628]/20 focus:border-[#173628]/30"
-                                    placeholder="https://example.com/image.jpg"
                                 />
                             </div>
-                            
-                            <div className="flex gap-3 pt-4">
+
+                            <div style={{ display: 'flex', gap: 12, paddingTop: 8 }}>
                                 <button
                                     type="button"
+                                    className="btn-secondary"
+                                    style={{ flex: 1 }}
                                     onClick={() => setShowAddModal(false)}
-                                    className="flex-1 px-4 py-2.5 border border-[#173628]/20 text-[#173628]/70 rounded-xl font-medium hover:bg-[#173628]/5 transition"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
+                                    className="btn-primary"
+                                    style={{ flex: 1, justifyContent: 'center' }}
                                     disabled={loading}
-                                    className="flex-1 px-4 py-2.5 bg-[#173628] text-white rounded-xl font-medium hover:bg-[#173628]/90 transition disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {loading ? 'Adding...' : 'Add Item'}
+                                    {loading ? 'Adding…' : 'Add item'}
                                 </button>
                             </div>
                         </form>

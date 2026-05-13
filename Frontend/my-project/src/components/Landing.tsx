@@ -46,7 +46,7 @@ const Landing = () => {
             </nav>
           </div>
           <div className="flex items-center gap-4 md:gap-8">
-            <a className="hidden sm:block font-label text-[12px] font-semibold tracking-widest uppercase text-on-surface-variant hover:text-primary transition-colors" href="#signin">
+            <a  onClick={() => Goto("Sign")}  className="hidden sm:block font-label text-[12px] font-semibold tracking-widest uppercase text-on-surface-variant hover:text-primary transition-colors" href="#signin">
               Sign In
             </a>
             <a className="px-6 py-2.5 bg-primary text-on-primary rounded-full font-label text-[12px] font-bold tracking-widest uppercase hover:shadow-lg transition-all" href="#reserve">
@@ -96,8 +96,8 @@ const Landing = () => {
 >
   Start Your Order{" "}
   <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform"></span>
-</button>
-              <a className="min-w-[220px] px-8 py-5 bg-white/20 backdrop-blur-md border border-primary/10 text-primary rounded-full font-label text-[12px] font-bold tracking-[0.2em] uppercase hover:bg-white/40 transition-all" href="#menu">
+</button >
+              <a  onClick={() => Goto("register")} className="min-w-[220px] px-8 py-5 bg-white/20 backdrop-blur-md border border-primary/10 text-primary rounded-full font-label text-[12px] font-bold tracking-[0.2em] uppercase hover:bg-white/40 transition-all" href="#menu">
                 Explore Menu
               </a>
             </div>
