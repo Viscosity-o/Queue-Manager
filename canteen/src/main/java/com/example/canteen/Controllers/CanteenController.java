@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "https://main.d2p2ult8kyt0kl.amplifyapp.com", "https://main.dh2rd7bq6k1c5.amplifyapp.com"})
 @RestController
 @RequestMapping("/Canteen")
 public class CanteenController {

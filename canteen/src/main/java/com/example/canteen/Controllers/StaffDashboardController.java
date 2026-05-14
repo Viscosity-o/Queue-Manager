@@ -12,7 +12,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/staff")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "https://main.d2p2ult8kyt0kl.amplifyapp.com"})
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "https://main.d2p2ult8kyt0kl.amplifyapp.com", "https://main.dh2rd7bq6k1c5.amplifyapp.com"})
 public class StaffDashboardController {
 
     private final StaffDashboardService staffDashboardService;
