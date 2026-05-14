@@ -41,6 +41,22 @@ public class StudentController {
     public String info(){
         return "Student endpoint is working";
     }
+
+    @GetMapping("/profile")
+    public ResponseEntity<?> getProfile(Authentication authentication) {
+        String email = authentication.getName();
+        studentable student = studentRepo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+        return ResponseEntity.ok(Map.of(
+                "name", student.getName(),
+                "email", student.getEmail(),
+                "phone", student.getPhone() != null ? student.getPhone() : "",
+                "collegeName", student.getCollegeName() != null ? student.getCollegeName() : "",
+                "collegeCode", student.getCollegeCode() != null ? student.getCollegeCode() : "",
+                "role", student.getRole().name(),
+                "memberSince", student.getCreatedAt() != null ? student.getCreatedAt().toLocalDate().toString() : ""
+        ));
+    }
     
     @GetMapping("/canteens")
     public ResponseEntity<List<CanteenResponse>> getCanteensByCollegeCode(Authentication authentication) {

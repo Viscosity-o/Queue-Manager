@@ -19,11 +19,58 @@ const StudDash = () => {
     const [searchError, setSearchError] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [showUserMenu, setShowUserMenu] = useState(false);
+    const [showBills, setShowBills] = useState(false);
+    const [showProfile, setShowProfile] = useState(false);
+    const [profile, setProfile] = useState<{
+        name: string; email: string; phone: string;
+        collegeName: string; collegeCode: string; role: string; memberSince: string;
+    } | null>(null);
+    const [profileLoading, setProfileLoading] = useState(false);
+
+    const STATIC_BILLS = [
+        { id: 'INV-2024-0041', canteen: 'The Great Hall Kitchen', date: 'Apr 12, 2026', time: '1:14 PM', items: [{ name: 'Harvest Radish Bowl', qty: 1, price: 180 }, { name: 'Iced Cappuccino', qty: 2, price: 85 }], status: 'Paid' },
+        { id: 'INV-2024-0038', canteen: 'Botanica Greens', date: 'Apr 10, 2026', time: '12:42 PM', items: [{ name: 'Vegan Wrap', qty: 1, price: 150 }, { name: 'Green Smoothie', qty: 1, price: 90 }], status: 'Paid' },
+        { id: 'INV-2024-0035', canteen: 'Piazza Italia', date: 'Apr 8, 2026', time: '2:05 PM', items: [{ name: 'Margherita Pizza', qty: 1, price: 220 }, { name: 'Tiramisu', qty: 1, price: 120 }], status: 'Paid' },
+        { id: 'INV-2024-0031', canteen: 'Library Brew', date: 'Apr 5, 2026', time: '10:30 AM', items: [{ name: 'Cold Brew Coffee', qty: 1, price: 95 }, { name: 'Croissant', qty: 2, price: 60 }], status: 'Paid' },
+        { id: 'INV-2024-0028', canteen: 'Zen Ramen Bar', date: 'Apr 2, 2026', time: '1:55 PM', items: [{ name: 'Tonkotsu Ramen', qty: 1, price: 280 }, { name: 'Gyoza (6 pcs)', qty: 1, price: 130 }], status: 'Paid' },
+        { id: 'INV-2024-0024', canteen: 'The Pastry Lab', date: 'Mar 29, 2026', time: '4:20 PM', items: [{ name: 'Matcha Croissant', qty: 2, price: 75 }, { name: 'Latte', qty: 1, price: 90 }], status: 'Paid' },
+    ];
+    const [expandedBill, setExpandedBill] = useState<string | null>(null);
 
     const handleLogout = () => {
         localStorage.removeItem('authToken');
         localStorage.removeItem('userRole');
         navigate('/Sign');
+    };
+
+    const handleOpenProfile = async () => {
+        setShowUserMenu(false);
+        setShowProfile(true);
+        if (profile) return;
+        setProfileLoading(true);
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                setProfileLoading(false);
+                return;
+            }
+            const res = await fetch(API_ENDPOINTS.STUDENT_PROFILE, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setProfile(data);
+            } else {
+                console.error('Profile fetch failed:', res.status, await res.text());
+            }
+        } catch (err) {
+            console.error('Profile fetch error:', err);
+        } finally {
+            setProfileLoading(false);
+        }
     };
 
     const handleSearch = async () => {
@@ -92,7 +139,7 @@ const StudDash = () => {
                     backdrop-filter:blur(12px);
                     border-bottom:1px solid rgba(0,0,0,0.07);
                     display:flex;align-items:center;justify-content:space-between;
-                    padding:0 32px;z-index:99;
+                    padding:0 32px;z-index:199;overflow:visible;
                 }
                 .topbar-breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px;color:#9a9a8e}
                 .topbar-breadcrumb span.active{color:#0F2318;font-weight:500}
@@ -128,7 +175,7 @@ const StudDash = () => {
                     position:absolute;right:0;top:44px;width:200px;
                     background:#fff;border:1px solid rgba(0,0,0,0.09);
                     border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.10);
-                    overflow:hidden;z-index:200;
+                    overflow:hidden;z-index:300;
                 }
                 .dropdown-header{padding:12px 14px;border-bottom:1px solid rgba(0,0,0,0.07)}
                 .dropdown-item{
@@ -358,6 +405,204 @@ const StudDash = () => {
                 .list-star{display:flex;align-items:center;gap:3px;font-size:11px;font-weight:700;color:#0F2318}
                 .list-chevron{color:#d0cfc7;margin-left:auto;font-size:18px;transition:color 0.15s}
                 .list-card:hover .list-chevron{color:#9a9a8e}
+
+                /* ── Bill panel ── */
+                .bill-overlay{
+                    position:fixed;inset:0;background:rgba(10,20,14,0.45);
+                    backdrop-filter:blur(4px);z-index:300;
+                    animation:fadeIn 0.2s ease;
+                }
+                @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+                .bill-panel{
+                    position:fixed;top:0;right:0;bottom:0;width:480px;
+                    background:#fff;z-index:301;
+                    display:flex;flex-direction:column;
+                    box-shadow:-24px 0 64px rgba(0,0,0,0.14);
+                    animation:slideIn 0.25s cubic-bezier(0.25,0.46,0.45,0.94);
+                }
+                @keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+                .bill-panel-header{
+                    padding:24px 24px 20px;
+                    border-bottom:1px solid rgba(0,0,0,0.07);
+                    display:flex;align-items:flex-start;justify-content:space-between;
+                    flex-shrink:0;
+                }
+                .bill-panel-title{font-size:18px;font-weight:700;color:#0F2318;letter-spacing:-0.3px}
+                .bill-panel-sub{font-size:12px;color:#9a9a8e;margin-top:3px}
+                .bill-close{
+                    width:32px;height:32px;border-radius:8px;
+                    border:1px solid rgba(0,0,0,0.09);background:#f8f7f4;
+                    display:flex;align-items:center;justify-content:center;
+                    cursor:pointer;color:#9a9a8e;transition:all 0.15s;flex-shrink:0;
+                }
+                .bill-close:hover{background:#f0f3f1;color:#0F2318}
+
+                /* Summary strip */
+                .bill-summary{
+                    display:flex;gap:0;border-bottom:1px solid rgba(0,0,0,0.07);
+                    flex-shrink:0;
+                }
+                .bill-sum-item{
+                    flex:1;padding:14px 20px;
+                    border-right:1px solid rgba(0,0,0,0.07);
+                }
+                .bill-sum-item:last-child{border-right:none}
+                .bill-sum-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#9a9a8e;margin-bottom:4px}
+                .bill-sum-val{font-size:20px;font-weight:700;color:#0F2318;letter-spacing:-0.5px}
+                .bill-sum-green{color:#1e8c56}
+
+                /* Bill list */
+                .bill-list{flex:1;overflow-y:auto;padding:16px;scrollbar-width:thin;scrollbar-color:#e0dfd8 transparent}
+                .bill-list::-webkit-scrollbar{width:4px}
+                .bill-list::-webkit-scrollbar-thumb{background:#e0dfd8;border-radius:4px}
+
+                .bill-item{
+                    border:1px solid rgba(0,0,0,0.08);border-radius:12px;
+                    overflow:hidden;margin-bottom:10px;
+                    transition:border-color 0.15s,box-shadow 0.15s;
+                    background:#fff;
+                }
+                .bill-item:hover{border-color:rgba(15,35,24,0.18);box-shadow:0 4px 16px rgba(0,0,0,0.06)}
+                .bill-item-header{
+                    display:flex;align-items:center;justify-content:space-between;
+                    padding:14px 16px;cursor:pointer;
+                }
+                .bill-item-left{display:flex;align-items:center;gap:12px}
+                .bill-icon{
+                    width:38px;height:38px;border-radius:9px;
+                    background:#f0f3f1;display:flex;align-items:center;justify-content:center;
+                    flex-shrink:0;
+                }
+                .bill-id{font-size:13px;font-weight:600;color:#0F2318}
+                .bill-canteen{font-size:11px;color:#9a9a8e;margin-top:2px}
+                .bill-item-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+                .bill-amount{font-size:15px;font-weight:700;color:#0F2318;letter-spacing:-0.3px}
+                .bill-date{font-size:11px;color:#b0af9a}
+                .bill-status{
+                    display:inline-flex;align-items:center;gap:4px;
+                    padding:2px 8px;border-radius:5px;
+                    font-size:10px;font-weight:700;letter-spacing:0.04em;
+                    background:#e8f6ee;color:#1e8c56;
+                }
+                .bill-chevron{color:#d0cfd8;font-size:16px;transition:transform 0.2s}
+                .bill-chevron.open{transform:rotate(180deg)}
+
+                /* Expanded detail */
+                .bill-detail{
+                    border-top:1px solid rgba(0,0,0,0.07);
+                    padding:14px 16px;background:#fafaf8;
+                }
+                .bill-detail-row{
+                    display:flex;align-items:center;justify-content:space-between;
+                    padding:6px 0;font-size:13px;color:#4a4a42;
+                }
+                .bill-detail-row:not(:last-child){border-bottom:1px solid rgba(0,0,0,0.05)}
+                .bill-detail-qty{
+                    display:inline-flex;align-items:center;justify-content:center;
+                    width:20px;height:20px;background:#f0f3f1;border-radius:5px;
+                    font-size:11px;font-weight:700;color:#2a6644;margin-right:8px;flex-shrink:0;
+                }
+                .bill-detail-total{
+                    display:flex;align-items:center;justify-content:space-between;
+                    padding:10px 0 0;margin-top:6px;
+                    border-top:1.5px solid rgba(0,0,0,0.10);
+                    font-size:14px;font-weight:700;color:#0F2318;
+                }
+                .bill-download{
+                    width:100%;margin-top:10px;padding:9px;
+                    background:#0F2318;color:#fff;border-radius:8px;
+                    font-size:12px;font-weight:600;border:none;cursor:pointer;
+                    display:flex;align-items:center;justify-content:center;gap:6px;
+                    transition:background 0.15s;
+                }
+                .bill-download:hover{background:#1a3d29}
+
+                /* ── Profile panel ── */
+                .profile-panel{
+                    position:fixed;top:0;right:0;bottom:0;width:420px;
+                    background:#fff;z-index:301;
+                    display:flex;flex-direction:column;
+                    box-shadow:-24px 0 64px rgba(0,0,0,0.14);
+                    animation:slideIn 0.25s cubic-bezier(0.25,0.46,0.45,0.94);
+                }
+                .profile-hero{
+                    background:linear-gradient(135deg,#0F2318 0%,#1e4d35 100%);
+                    padding:32px 24px 28px;position:relative;overflow:hidden;flex-shrink:0;
+                }
+                .profile-hero::before{
+                    content:'';position:absolute;top:-40px;right:-40px;
+                    width:160px;height:160px;border-radius:50%;
+                    background:rgba(255,255,255,0.05);
+                }
+                .profile-hero::after{
+                    content:'';position:absolute;bottom:-30px;left:-20px;
+                    width:120px;height:120px;border-radius:50%;
+                    background:rgba(255,255,255,0.04);
+                }
+                .profile-close{
+                    position:absolute;top:16px;right:16px;
+                    width:30px;height:30px;border-radius:8px;
+                    background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.18);
+                    display:flex;align-items:center;justify-content:center;
+                    cursor:pointer;color:rgba(255,255,255,0.7);transition:all 0.15s;z-index:1;
+                }
+                .profile-close:hover{background:rgba(255,255,255,0.20);color:#fff}
+                .profile-avatar-ring{
+                    width:72px;height:72px;border-radius:18px;
+                    background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.25);
+                    display:flex;align-items:center;justify-content:center;
+                    margin-bottom:14px;position:relative;z-index:1;
+                }
+                .profile-name{font-size:20px;font-weight:700;color:#fff;letter-spacing:-0.3px;position:relative;z-index:1}
+                .profile-email-hero{font-size:12px;color:rgba(255,255,255,0.55);margin-top:3px;position:relative;z-index:1}
+                .profile-role-badge{
+                    display:inline-flex;align-items:center;gap:5px;
+                    margin-top:12px;padding:4px 10px;border-radius:6px;
+                    background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.20);
+                    font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
+                    color:rgba(255,255,255,0.80);position:relative;z-index:1;
+                }
+
+                /* Info sections */
+                .profile-body{flex:1;overflow-y:auto;padding:20px;scrollbar-width:thin;scrollbar-color:#e0dfd8 transparent}
+                .profile-body::-webkit-scrollbar{width:4px}
+                .profile-body::-webkit-scrollbar-thumb{background:#e0dfd8;border-radius:4px}
+                .profile-section{margin-bottom:20px}
+                .profile-section-label{
+                    font-size:10px;font-weight:700;text-transform:uppercase;
+                    letter-spacing:0.10em;color:#9a9a8e;margin-bottom:10px;
+                    display:flex;align-items:center;gap:6px;
+                }
+                .profile-section-label::after{content:'';flex:1;height:1px;background:rgba(0,0,0,0.07)}
+                .profile-field{
+                    display:flex;align-items:center;gap:12px;
+                    padding:12px 14px;background:#f8f7f4;
+                    border:1px solid rgba(0,0,0,0.07);border-radius:10px;
+                    margin-bottom:8px;
+                }
+                .profile-field-icon{
+                    width:34px;height:34px;border-radius:8px;
+                    background:#fff;border:1px solid rgba(0,0,0,0.08);
+                    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+                }
+                .profile-field-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:#9a9a8e;margin-bottom:2px}
+                .profile-field-value{font-size:14px;font-weight:500;color:#0F2318}
+                .profile-field-value.empty{color:#c0bfb0;font-style:italic;font-size:13px}
+
+                /* Member since strip */
+                .profile-since{
+                    display:flex;align-items:center;gap:10px;
+                    padding:12px 14px;
+                    background:linear-gradient(135deg,#f0f3f1,#e8f0ec);
+                    border:1px solid rgba(15,35,24,0.10);border-radius:10px;
+                    margin-top:4px;
+                }
+                .profile-since-text{font-size:12px;color:#2a6644;font-weight:600}
+                .profile-since-sub{font-size:11px;color:#5a9a72;margin-top:1px}
+
+                /* Skeleton */
+                .skel{background:linear-gradient(90deg,#f0efe8 25%,#e8e7e0 50%,#f0efe8 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px}
+                @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
             `}</style>
 
             {/* ── Sidebar ── */}
@@ -366,12 +611,12 @@ const StudDash = () => {
                     <span className="mat mat-fill" style={{ color: '#fff', fontSize: 18 }}>restaurant</span>
                 </div>
                 {[
-                    { icon: 'grid_view', active: true },
-                    { icon: 'storefront', active: false },
-                    { icon: 'receipt_long', active: false },
-                    { icon: 'bookmark', active: false },
+                    { icon: 'grid_view', active: true, onClick: undefined },
+                    { icon: 'storefront', active: false, onClick: undefined },
+                    { icon: 'receipt_long', active: false, onClick: () => setShowBills(true) },
+                    { icon: 'bookmark', active: false, onClick: undefined },
                 ].map((s, i) => (
-                    <div key={i} className={`sidebar-icon ${s.active ? 'active' : ''}`}>
+                    <div key={i} className={`sidebar-icon ${s.active ? 'active' : ''}`} onClick={s.onClick}>
                         <span className="mat" style={{ fontSize: 20 }}>{s.icon}</span>
                     </div>
                 ))}
@@ -412,17 +657,17 @@ const StudDash = () => {
                             <span className="mat mat-fill" style={{ color: '#fff', fontSize: 16 }}>person</span>
                         </div>
                         {showUserMenu && (
-                            <div className="dropdown">
+                            <div className="dropdown" style={{ zIndex: 300 }}>
                                 <div className="dropdown-header">
                                     <div style={{ fontSize: 13, fontWeight: 600, color: '#0F2318' }}>My Account</div>
                                     <div style={{ fontSize: 11, color: '#9a9a8e', marginTop: 2 }}>Student Portal</div>
                                 </div>
                                 <div style={{ padding: '4px 0' }}>
-                                    <button className="dropdown-item">
+                                    <button className="dropdown-item" onClick={handleOpenProfile}>
                                         <span className="mat" style={{ fontSize: 16 }}>person</span>
                                         Profile
                                     </button>
-                                    <button className="dropdown-item">
+                                    <button className="dropdown-item" onClick={() => { setShowUserMenu(false); setShowBills(true); }}>
                                         <span className="mat" style={{ fontSize: 16 }}>receipt_long</span>
                                         My Orders
                                     </button>
@@ -686,6 +931,204 @@ const StudDash = () => {
                 </div>
 
             </main>
+
+            {/* ── Profile Panel ── */}
+            {showProfile && (
+                <>
+                    <div className="bill-overlay" onClick={() => setShowProfile(false)} />
+                    <div className="profile-panel">
+                        {/* Hero header */}
+                        <div className="profile-hero">
+                            <button className="profile-close" onClick={() => setShowProfile(false)}>
+                                <span className="mat" style={{ fontSize: 16 }}>close</span>
+                            </button>
+                            <div className="profile-avatar-ring">
+                                <span className="mat mat-fill" style={{ fontSize: 32, color: 'rgba(255,255,255,0.85)' }}>person</span>
+                            </div>
+                            {profileLoading ? (
+                                <>
+                                    <div className="skel" style={{ width: 160, height: 22, marginBottom: 8 }} />
+                                    <div className="skel" style={{ width: 200, height: 14 }} />
+                                </>
+                            ) : (
+                                <>
+                                    <div className="profile-name">{profile?.name || '—'}</div>
+                                    <div className="profile-email-hero">{profile?.email || '—'}</div>
+                                    <div className="profile-role-badge">
+                                        <span className="mat mat-fill" style={{ fontSize: 12 }}>school</span>
+                                        {profile?.role || 'Student'}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Body */}
+                        <div className="profile-body">
+                            {profileLoading ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '8px 0' }}>
+                                    {[1,2,3,4].map(i => (
+                                        <div key={i} className="skel" style={{ height: 58, borderRadius: 10 }} />
+                                    ))}
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Personal info */}
+                                    <div className="profile-section">
+                                        <div className="profile-section-label">Personal Information</div>
+                                        {[
+                                            { icon: 'badge', label: 'Full Name', value: profile?.name },
+                                            { icon: 'mail', label: 'Email Address', value: profile?.email },
+                                            { icon: 'phone', label: 'Phone Number', value: profile?.phone },
+                                        ].map(f => (
+                                            <div key={f.label} className="profile-field">
+                                                <div className="profile-field-icon">
+                                                    <span className="mat" style={{ fontSize: 16, color: '#2a6644' }}>{f.icon}</span>
+                                                </div>
+                                                <div>
+                                                    <div className="profile-field-label">{f.label}</div>
+                                                    <div className={`profile-field-value ${!f.value ? 'empty' : ''}`}>
+                                                        {f.value || 'Not provided'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Academic info */}
+                                    <div className="profile-section">
+                                        <div className="profile-section-label">Academic Details</div>
+                                        {[
+                                            { icon: 'school', label: 'College Name', value: profile?.collegeName },
+                                            { icon: 'tag', label: 'College Code', value: profile?.collegeCode },
+                                        ].map(f => (
+                                            <div key={f.label} className="profile-field">
+                                                <div className="profile-field-icon">
+                                                    <span className="mat" style={{ fontSize: 16, color: '#2a6644' }}>{f.icon}</span>
+                                                </div>
+                                                <div>
+                                                    <div className="profile-field-label">{f.label}</div>
+                                                    <div className={`profile-field-value ${!f.value ? 'empty' : ''}`}>
+                                                        {f.value || 'Not provided'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Account info */}
+                                    <div className="profile-section">
+                                        <div className="profile-section-label">Account</div>
+                                        <div className="profile-since">
+                                            <div style={{ width: 34, height: 34, borderRadius: 8, background: '#d4eddf', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                <span className="mat mat-fill" style={{ fontSize: 16, color: '#1e8c56' }}>verified</span>
+                                            </div>
+                                            <div>
+                                                <div className="profile-since-text">Member since {profile?.memberSince || '—'}</div>
+                                                <div className="profile-since-sub">Account in good standing</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* ── Bill History Panel ── */}
+            {showBills && (
+                <>
+                    <div className="bill-overlay" onClick={() => setShowBills(false)} />
+                    <div className="bill-panel">
+                        {/* Header */}
+                        <div className="bill-panel-header">
+                            <div>
+                                <div className="bill-panel-title">Bill History</div>
+                                <div className="bill-panel-sub">{STATIC_BILLS.length} transactions · All paid</div>
+                            </div>
+                            <button className="bill-close" onClick={() => setShowBills(false)}>
+                                <span className="mat" style={{ fontSize: 18 }}>close</span>
+                            </button>
+                        </div>
+
+                        {/* Summary strip */}
+                        <div className="bill-summary">
+                            <div className="bill-sum-item">
+                                <div className="bill-sum-label">Total Spent</div>
+                                <div className="bill-sum-val">
+                                    ₹{STATIC_BILLS.reduce((acc, b) => acc + b.items.reduce((s, i) => s + i.price * i.qty, 0), 0).toLocaleString()}
+                                </div>
+                            </div>
+                            <div className="bill-sum-item">
+                                <div className="bill-sum-label">Orders</div>
+                                <div className="bill-sum-val">{STATIC_BILLS.length}</div>
+                            </div>
+                            <div className="bill-sum-item">
+                                <div className="bill-sum-label">Status</div>
+                                <div className="bill-sum-val bill-sum-green">All Clear</div>
+                            </div>
+                        </div>
+
+                        {/* Bill list */}
+                        <div className="bill-list">
+                            {STATIC_BILLS.map((bill) => {
+                                const total = bill.items.reduce((s, i) => s + i.price * i.qty, 0);
+                                const isOpen = expandedBill === bill.id;
+                                return (
+                                    <div key={bill.id} className="bill-item">
+                                        <div className="bill-item-header" onClick={() => setExpandedBill(isOpen ? null : bill.id)}>
+                                            <div className="bill-item-left">
+                                                <div className="bill-icon">
+                                                    <span className="mat" style={{ fontSize: 18, color: '#2a6644' }}>receipt_long</span>
+                                                </div>
+                                                <div>
+                                                    <div className="bill-id">{bill.id}</div>
+                                                    <div className="bill-canteen">{bill.canteen}</div>
+                                                </div>
+                                            </div>
+                                            <div className="bill-item-right">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                    <div className="bill-amount">₹{total.toLocaleString()}</div>
+                                                    <span className={`bill-chevron mat ${isOpen ? 'open' : ''}`} style={{ fontSize: 18 }}>expand_more</span>
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                                    <div className="bill-date">{bill.date} · {bill.time}</div>
+                                                </div>
+                                                <div className="bill-status">
+                                                    <span className="mat mat-fill" style={{ fontSize: 10 }}>check_circle</span>
+                                                    {bill.status}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {isOpen && (
+                                            <div className="bill-detail">
+                                                {bill.items.map((item, idx) => (
+                                                    <div key={idx} className="bill-detail-row">
+                                                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                                                            <span className="bill-detail-qty">×{item.qty}</span>
+                                                            {item.name}
+                                                        </div>
+                                                        <div style={{ fontWeight: 600, color: '#0F2318' }}>₹{(item.price * item.qty).toLocaleString()}</div>
+                                                    </div>
+                                                ))}
+                                                <div className="bill-detail-total">
+                                                    <span>Total</span>
+                                                    <span>₹{total.toLocaleString()}</span>
+                                                </div>
+                                                <button className="bill-download">
+                                                    <span className="mat" style={{ fontSize: 15 }}>download</span>
+                                                    Download Receipt
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 };
