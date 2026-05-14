@@ -1,0 +1,56 @@
+# ============================================================================
+#  Canteen Management System — Docker Compose
+#  Usage:
+#    docker compose up --build          (first time / after code changes)
+#    docker compose up -d               (detached / background mode)
+#    docker compose down                (stop everything)
+#    docker compose logs -f             (follow all logs)
+#    docker compose logs -f backend     (follow backend logs only)
+# ============================================================================
+
+services:
+  # ── Spring Boot Backend ────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./canteen
+      dockerfile: Dockerfile
+    container_name: canteen-backend
+    ports:
+      - "8080:8080"
+    environment:
+      # Server
+      PORT: 8080
+      # Database (Supabase)
+      SPRING_DATASOURCE_URL: ${DB_URL:-jdbc:postgresql://host.docker.internal:5432/postgres}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-password}
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-canteen-super-secret-key-must-be-at-least-32-chars}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      # Razorpay
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-rzp_test_SaJERYJxlWnzZA}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-IsY3X1aNvjFtNxddBBzU7hn5}
+      # CORS
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health || exit 0"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ── React / Vite Frontend ──────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./Frontend/my-project
+      dockerfile: Dockerfile
+      args:
+        # This tells the Vite build where the backend is.
+        # For local Docker: the backend runs on localhost:8080 from the browser's perspective.
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+    container_name: canteen-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped

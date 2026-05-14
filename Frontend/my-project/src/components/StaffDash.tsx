@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { API_ENDPOINTS } from '../config/api';
+import API_BASE_URL, { API_ENDPOINTS } from '../config/api';
 
 interface DashboardStats {
     todayRevenue: number;
@@ -56,7 +56,7 @@ const StaffDash = () => {
         try {
             const token = localStorage.getItem('authToken');
             if (!token) { setProfileLoading(false); return; }
-            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/Canteen/profile`, {
+            const res = await fetch(`${API_BASE_URL}/Canteen/profile`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) setProfile(await res.json());
