@@ -152,7 +152,7 @@ const CanteenMenu: React.FC = () => {
     });
   };
 
-  const removeFromCart = (id: string) => setCart(prev => prev.filter(c => c.menuItemId !== id));
+
 
   const updateQty = (id: string, delta: number) => {
     setCart(prev =>
@@ -165,9 +165,7 @@ const CanteenMenu: React.FC = () => {
   const getTotalItems = () => cart.reduce((s, i) => s + i.quantity, 0);
   const getTotalPrice = () => cart.reduce((s, i) => s + i.price * i.quantity, 0);
 
-  const filteredItems = activeCategory
-    ? menuItems.filter(item => item.category === activeCategory)
-    : menuItems;
+
 
   /* ── Loader ── */
   if (loading) {
