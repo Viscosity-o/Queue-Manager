@@ -1,0 +1,20 @@
+# Build output
+target/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Git
+.git/
+.gitignore
+
+# Environment secrets
+.env
+.env.example
+
+# Docs
+*.md
